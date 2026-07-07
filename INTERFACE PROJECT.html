@@ -1,0 +1,2046 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Outfit Styling System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,600&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   DESIGN TOKENS
+═══════════════════════════════════════════════════════════ */
+:root{
+  /* Pink Palette */
+  --pink-25:#fff8fb;
+  --pink-50:#fff0f5;
+  --pink-100:#ffe1ec;
+  --pink-200:#ffb3ce;
+  --pink-300:#ff80ae;
+  --pink-400:#f0507f;
+  --pink-500:#e0305e;
+  --pink-600:#c01f4a;
+  --pink-700:#9a1238;
+
+  /* Warm Neutrals */
+  --cream:#fdfaf8;
+  --sand:#f5ede8;
+  --taupe:#e8dbd4;
+  --stone:#c4b0a6;
+  --bark:#8a6f65;
+  --espresso:#3d2520;
+
+  /* Semantic */
+  --bg:#fdfaf8;
+  --surface:#ffffff;
+  --surface-2:#fff8fb;
+  --border:#f0e4dc;
+  --border-2:#e8dbd4;
+  --text-primary:#2a1a14;
+  --text-secondary:#7a5a52;
+  --text-muted:#b09088;
+  --accent:var(--pink-500);
+  --accent-light:var(--pink-50);
+
+  /* Typography */
+  --font-display:'Cormorant Garamond',Georgia,serif;
+  --font-body:'DM Sans',system-ui,sans-serif;
+
+  /* Radii */
+  --r-sm:8px;
+  --r-md:14px;
+  --r-lg:20px;
+  --r-xl:28px;
+  --r-full:9999px;
+
+  /* Shadows */
+  --shadow-xs:0 1px 2px rgba(200,80,100,.06);
+  --shadow-sm:0 2px 8px rgba(200,80,100,.08);
+  --shadow-md:0 6px 24px rgba(200,80,100,.12);
+  --shadow-lg:0 16px 48px rgba(200,80,100,.16);
+
+  /* Sidebar */
+  --sidebar:220px;
+  --topbar:64px;
+
+  /* Transition */
+  --t:.22s cubic-bezier(.4,0,.2,1);
+}
+
+[data-theme="dark"]{
+  --bg:#1c1014;
+  --surface:#261820;
+  --surface-2:#301c24;
+  --border:#3e2830;
+  --border-2:#4a3038;
+  --text-primary:#f8eee8;
+  --text-secondary:#c4988a;
+  --text-muted:#8a6055;
+  --accent-light:rgba(224,48,94,.12);
+  --cream:#1c1014;
+  --sand:#261820;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESET
+═══════════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary);line-height:1.6;overflow-x:hidden;transition:background .3s,color .3s}
+img{display:block;width:100%;height:100%;object-fit:cover}
+a{color:inherit;text-decoration:none}
+button{font-family:var(--font-body);cursor:pointer;border:none;background:none;outline:none}
+ul{list-style:none}
+input,select,textarea{font-family:var(--font-body);outline:none}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--pink-200);border-radius:99px}
+
+/* ═══════════════════════════════════════════════════════════
+   LOADING SCREEN
+═══════════════════════════════════════════════════════════ */
+#loader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--surface);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;
+  transition:opacity .5s,visibility .5s;
+}
+#loader.gone{opacity:0;visibility:hidden}
+.loader-brand{font-family:var(--font-display);font-size:2rem;font-weight:600;color:var(--pink-500);letter-spacing:.05em}
+.loader-track{width:160px;height:2px;background:var(--pink-100);border-radius:99px;overflow:hidden}
+.loader-fill{height:100%;background:linear-gradient(90deg,var(--pink-400),var(--pink-300));border-radius:99px;animation:load 1.8s ease forwards}
+@keyframes load{0%{width:0}100%{width:100%}}
+
+/* ═══════════════════════════════════════════════════════════
+   PAGE SYSTEM
+═══════════════════════════════════════════════════════════ */
+.page,.app-page{display:none}
+.page.active,.app-page.active{display:block}
+.app-page.active{display:flex}
+
+/* ═══════════════════════════════════════════════════════════
+   GLOBAL TOPNAV (page switcher)
+═══════════════════════════════════════════════════════════ */
+#gnav{
+  position:fixed;top:0;left:0;right:0;z-index:800;height:52px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;
+  background:rgba(253,250,248,.92);backdrop-filter:blur(16px);
+  border-bottom:1px solid var(--border);
+  transition:background .3s;
+}
+[data-theme="dark"] #gnav{background:rgba(28,16,20,.92)}
+.gnav-logo{
+  font-family:var(--font-display);font-size:1.2rem;font-weight:600;
+  display:flex;align-items:center;gap:8px;color:var(--text-primary);
+}
+.gnav-logo span{color:var(--pink-500)}
+.gnav-links{display:flex;gap:2px;align-items:center}
+.gnav-link{
+  padding:6px 13px;border-radius:var(--r-full);
+  font-size:.78rem;font-weight:500;color:var(--text-secondary);
+  transition:var(--t);cursor:pointer;
+}
+.gnav-link:hover,.gnav-link.active{background:var(--pink-50);color:var(--pink-500)}
+[data-theme="dark"] .gnav-link:hover,[data-theme="dark"] .gnav-link.active{background:var(--accent-light)}
+.gnav-right{display:flex;align-items:center;gap:8px}
+.theme-btn{
+  width:34px;height:34px;border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text-secondary);font-size:.85rem;transition:var(--t);
+}
+.theme-btn:hover{background:var(--pink-50);color:var(--pink-500)}
+.mob-menu-btn{
+  display:none;width:34px;height:34px;border-radius:var(--r-sm);
+  align-items:center;justify-content:center;
+  background:var(--surface-2);border:1px solid var(--border);
+  color:var(--text-primary);font-size:.9rem;
+}
+.mob-nav{
+  display:none;position:fixed;top:52px;left:0;right:0;z-index:790;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  flex-direction:column;padding:8px;gap:2px;
+  box-shadow:var(--shadow-md);
+}
+.mob-nav.open{display:flex}
+.mob-nav-item{
+  padding:11px 14px;border-radius:var(--r-md);
+  font-size:.88rem;font-weight:500;color:var(--text-secondary);cursor:pointer;
+  transition:var(--t);
+}
+.mob-nav-item:hover{background:var(--pink-50);color:var(--pink-500)}
+
+/* ═══════════════════════════════════════════════════════════
+   LANDING PAGE
+═══════════════════════════════════════════════════════════ */
+#pg-landing{padding-top:52px}
+
+/* Hero */
+.hero{
+  min-height:100vh;display:grid;grid-template-columns:1fr 1fr;
+  align-items:center;position:relative;overflow:hidden;
+}
+.hero-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(135deg,#fff8fb 0%,#fff5f8 50%,#fdf0f4 100%);
+  z-index:0;
+}
+[data-theme="dark"] .hero-bg{background:linear-gradient(135deg,#1c1014,#221620,#1e1218)}
+.hero-orb{
+  position:absolute;border-radius:50%;
+  background:radial-gradient(circle,rgba(224,48,94,.1),transparent 70%);
+  pointer-events:none;
+}
+.hero-orb-1{width:500px;height:500px;right:-80px;top:-100px}
+.hero-orb-2{width:350px;height:350px;left:10%;bottom:-50px;background:radial-gradient(circle,rgba(240,80,127,.07),transparent 70%)}
+.hero-left{
+  position:relative;z-index:1;
+  padding:80px 56px 80px max(20px,calc((100vw - 1160px)/2 + 20px));
+}
+.hero-pill{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 14px;border-radius:var(--r-full);
+  background:var(--pink-50);border:1px solid var(--pink-200);
+  color:var(--pink-600);font-size:.72rem;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px;
+  animation:fadeUp .6s ease both;
+}
+[data-theme="dark"] .hero-pill{background:var(--accent-light);border-color:rgba(224,48,94,.3)}
+.hero-title{
+  font-family:var(--font-display);
+  font-size:clamp(3rem,6vw,5rem);
+  font-weight:600;line-height:1.08;letter-spacing:-.02em;
+  margin-bottom:18px;color:var(--text-primary);
+  animation:fadeUp .7s .08s ease both;
+}
+.hero-title em{font-style:italic;color:var(--pink-500)}
+.hero-sub{
+  font-size:1rem;color:var(--text-secondary);line-height:1.75;
+  max-width:430px;margin-bottom:34px;font-weight:300;
+  animation:fadeUp .7s .16s ease both;
+}
+.hero-btns{display:flex;gap:12px;flex-wrap:wrap;animation:fadeUp .7s .24s ease both}
+.btn-primary{
+  padding:13px 26px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--pink-500),var(--pink-400));
+  color:#fff;font-size:.86rem;font-weight:600;
+  box-shadow:0 4px 18px rgba(224,48,94,.3);
+  transition:var(--t);display:inline-flex;align-items:center;gap:7px;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(224,48,94,.4)}
+.btn-outline{
+  padding:12px 26px;border-radius:var(--r-full);
+  background:transparent;border:1.5px solid var(--pink-300);
+  color:var(--pink-500);font-size:.86rem;font-weight:600;
+  transition:var(--t);display:inline-flex;align-items:center;gap:7px;
+}
+.btn-outline:hover{background:var(--pink-50);border-color:var(--pink-500)}
+.hero-stats{
+  display:flex;gap:28px;flex-wrap:wrap;margin-top:40px;
+  padding-top:32px;border-top:1px solid var(--border);
+  animation:fadeUp .7s .32s ease both;
+}
+.hero-stat-num{font-family:var(--font-display);font-size:1.6rem;font-weight:600;color:var(--text-primary)}
+.hero-stat-label{font-size:.75rem;color:var(--text-muted);margin-top:2px}
+.hero-right{
+  position:relative;z-index:1;height:100vh;
+  display:flex;align-items:center;justify-content:center;padding:60px 40px;
+  background:linear-gradient(145deg,var(--pink-50),var(--pink-100));
+  animation:fadeUp .7s .1s ease both;
+}
+[data-theme="dark"] .hero-right{background:linear-gradient(145deg,var(--surface),var(--surface-2))}
+.hero-img{
+  width:300px;height:420px;border-radius:50% 50% 48% 52% / 52% 48% 52% 48%;
+  overflow:hidden;box-shadow:0 24px 64px rgba(224,48,94,.2);
+  animation:float 7s ease-in-out infinite;
+}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-16px)}}
+.hero-badge{
+  position:absolute;bottom:100px;left:20px;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:12px 16px;box-shadow:var(--shadow-md);
+  animation:float 6s 1s ease-in-out infinite;
+}
+[data-theme="dark"] .hero-badge{background:rgba(38,24,32,.85);border-color:var(--border)}
+.hero-badge-label{font-size:.7rem;color:var(--text-muted);margin-bottom:3px}
+.hero-badge-val{font-size:.9rem;font-weight:600;color:var(--text-primary)}
+.hero-badge-sub{font-size:.7rem;color:var(--pink-500);margin-top:1px}
+.hero-badge-2{
+  position:absolute;top:100px;right:10px;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(12px);
+  border:1px solid var(--border);border-radius:var(--r-lg);
+  padding:12px 16px;box-shadow:var(--shadow-md);
+  animation:float 8s 2s ease-in-out infinite;
+}
+[data-theme="dark"] .hero-badge-2{background:rgba(38,24,32,.85);border-color:var(--border)}
+
+/* Feature section */
+.land-section{padding:80px max(20px,calc((100vw - 1160px)/2 + 20px))}
+.land-section-center{text-align:center;max-width:560px;margin:0 auto 52px}
+.section-tag{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.7rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--pink-500);margin-bottom:12px;
+}
+.section-tag::before{content:'';width:18px;height:1.5px;background:var(--pink-400);border-radius:2px}
+.section-h{font-family:var(--font-display);font-size:clamp(1.8rem,3.5vw,2.6rem);font-weight:600;line-height:1.15;letter-spacing:-.02em;margin-bottom:12px}
+.section-h em{font-style:italic;color:var(--pink-500)}
+.section-sub{font-size:.92rem;color:var(--text-secondary);line-height:1.75;font-weight:300}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.feat-card{
+  padding:28px 22px;border-radius:var(--r-xl);
+  background:var(--surface);border:1px solid var(--border);
+  transition:var(--t);position:relative;overflow:hidden;
+}
+.feat-card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,var(--pink-25),transparent);
+  opacity:0;transition:var(--t);
+}
+.feat-card:hover{transform:translateY(-5px);box-shadow:var(--shadow-md);border-color:var(--pink-200)}
+.feat-card:hover::before{opacity:1}
+.feat-icon{
+  width:48px;height:48px;border-radius:var(--r-md);
+  background:var(--pink-50);color:var(--pink-500);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;margin-bottom:16px;transition:var(--t);position:relative;
+}
+.feat-card:hover .feat-icon{background:var(--pink-500);color:#fff}
+.feat-card h3{font-size:.95rem;font-weight:600;margin-bottom:8px}
+.feat-card p{font-size:.82rem;color:var(--text-secondary);line-height:1.65}
+
+/* Testimonials */
+.land-testi-bg{background:var(--sand)}
+[data-theme="dark"] .land-testi-bg{background:var(--surface)}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.testi-card{
+  padding:24px;border-radius:var(--r-xl);
+  background:var(--surface);border:1px solid var(--border);
+  transition:var(--t);
+}
+.testi-card:hover{border-color:var(--pink-200);box-shadow:var(--shadow-sm)}
+.testi-stars{color:#e8a04a;font-size:.8rem;margin-bottom:12px;letter-spacing:1px}
+.testi-quote{font-style:italic;font-size:.88rem;color:var(--text-secondary);line-height:1.7;margin-bottom:16px;font-family:var(--font-display);font-size:1rem}
+.testi-author{display:flex;align-items:center;gap:10px}
+.testi-av{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pink-300),var(--pink-500));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:600;font-size:.85rem;
+}
+.testi-name{font-size:.84rem;font-weight:600}
+.testi-role{font-size:.72rem;color:var(--text-muted)}
+
+/* Footer */
+footer{background:var(--espresso);color:#e0c8c0;padding:56px max(20px,calc((100vw - 1160px)/2 + 20px)) 24px}
+[data-theme="dark"] footer{background:#0e080c}
+.foot-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:40px;margin-bottom:40px}
+.foot-brand{font-family:var(--font-display);font-size:1.4rem;font-weight:600;color:#fff;margin-bottom:10px}
+.foot-desc{font-size:.82rem;opacity:.6;line-height:1.7;max-width:220px}
+.foot-col h5{color:#fff;font-size:.78rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px}
+.foot-link{display:block;font-size:.82rem;opacity:.55;margin-bottom:9px;transition:var(--t)}
+.foot-link:hover{opacity:1;color:var(--pink-300)}
+.foot-bottom{border-top:1px solid rgba(255,255,255,.08);padding-top:22px;display:flex;justify-content:space-between;font-size:.78rem;opacity:.45;flex-wrap:wrap;gap:10px}
+.foot-socials{display:flex;gap:10px}
+.foot-soc{
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.08);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;color:#fff;transition:var(--t);
+}
+.foot-soc:hover{background:var(--pink-500)}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH PAGE
+═══════════════════════════════════════════════════════════ */
+#pg-auth{
+  padding-top:52px;min-height:100vh;
+  display:grid;grid-template-columns:1fr 1fr;
+}
+.auth-visual{
+  position:relative;overflow:hidden;
+  background:linear-gradient(150deg,var(--pink-100),var(--pink-200),var(--pink-300));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 44px;
+}
+[data-theme="dark"] .auth-visual{background:linear-gradient(150deg,#3d1828,#5a2040,#7a2858)}
+.auth-visual-img{
+  width:260px;height:340px;
+  border-radius:50% 50% 46% 54% / 52% 46% 54% 48%;
+  overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.2);margin-bottom:28px;
+}
+.auth-visual-quote{
+  text-align:center;color:white;
+  font-family:var(--font-display);font-size:1.3rem;font-style:italic;line-height:1.4;
+  text-shadow:0 2px 8px rgba(0,0,0,.15);
+}
+.auth-form-wrap{
+  display:flex;flex-direction:column;justify-content:center;
+  padding:60px 52px;background:var(--bg);
+}
+.auth-inner{max-width:380px;width:100%;margin:0 auto}
+.auth-title{font-family:var(--font-display);font-size:1.9rem;font-weight:600;margin-bottom:4px}
+.auth-subtitle{font-size:.85rem;color:var(--text-muted);margin-bottom:28px}
+.auth-tabs{
+  display:flex;background:var(--sand);border-radius:var(--r-full);
+  padding:4px;margin-bottom:26px;
+}
+[data-theme="dark"] .auth-tabs{background:var(--surface-2)}
+.auth-tab{
+  flex:1;padding:8px;border-radius:var(--r-full);
+  font-size:.82rem;font-weight:500;color:var(--text-muted);
+  text-align:center;cursor:pointer;transition:var(--t);
+}
+.auth-tab.active{background:linear-gradient(135deg,var(--pink-500),var(--pink-400));color:#fff;box-shadow:0 3px 10px rgba(224,48,94,.3)}
+.auth-panel{display:none}.auth-panel.active{display:block;animation:fadeUp .3s ease}
+.form-lbl{display:block;font-size:.74rem;font-weight:600;color:var(--text-secondary);margin-bottom:6px;letter-spacing:.04em;text-transform:uppercase}
+.form-inp{
+  width:100%;padding:12px 15px;
+  background:var(--sand);border:1.5px solid var(--border-2);
+  border-radius:var(--r-md);font-size:.88rem;color:var(--text-primary);
+  transition:var(--t);margin-bottom:14px;
+}
+[data-theme="dark"] .form-inp{background:var(--surface-2);border-color:var(--border)}
+.form-inp:focus{border-color:var(--pink-400);background:var(--surface);box-shadow:0 0 0 3px rgba(224,48,94,.09)}
+.form-inp::placeholder{color:var(--text-muted)}
+.pw-wrap{position:relative;margin-bottom:14px}
+.pw-wrap .form-inp{padding-right:42px;margin-bottom:0}
+.pw-eye{position:absolute;right:13px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:.85rem;cursor:pointer;transition:var(--t)}
+.pw-eye:hover{color:var(--pink-500)}
+.form-submit{
+  width:100%;padding:13px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--pink-500),var(--pink-400));
+  color:#fff;font-size:.88rem;font-weight:600;
+  box-shadow:0 4px 16px rgba(224,48,94,.3);
+  transition:var(--t);margin-bottom:18px;
+}
+.form-submit:hover{transform:translateY(-1px);box-shadow:0 7px 22px rgba(224,48,94,.4)}
+.auth-or{display:flex;align-items:center;gap:10px;font-size:.76rem;color:var(--text-muted);margin-bottom:14px}
+.auth-or::before,.auth-or::after{content:'';flex:1;height:1px;background:var(--border-2)}
+.social-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.social-btn{
+  padding:10px;border-radius:var(--r-md);
+  background:var(--surface);border:1.5px solid var(--border-2);
+  font-size:.82rem;font-weight:500;color:var(--text-primary);
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  transition:var(--t);
+}
+.social-btn:hover{border-color:var(--pink-300);color:var(--pink-500)}
+.auth-switch{text-align:center;font-size:.82rem;color:var(--text-muted)}
+.auth-switch a{color:var(--pink-500);font-weight:600;cursor:pointer}
+.auth-switch a:hover{text-decoration:underline}
+
+/* ═══════════════════════════════════════════════════════════
+   APP SHELL
+═══════════════════════════════════════════════════════════ */
+
+/* Sidebar */
+.app-sidebar{
+  width:var(--sidebar);flex-shrink:0;
+  background:var(--surface);border-right:1px solid var(--border);
+  height:calc(100vh - 52px);position:sticky;top:52px;
+  display:flex;flex-direction:column;overflow:hidden;
+  transition:width .3s cubic-bezier(.4,0,.2,1);z-index:200;
+}
+.app-sidebar.slim{width:60px}
+.sb-head{padding:18px 14px 10px;display:flex;align-items:center;justify-content:space-between}
+.sb-brand{
+  font-family:var(--font-display);font-size:1.05rem;font-weight:600;
+  white-space:nowrap;overflow:hidden;transition:opacity .2s;
+  display:flex;align-items:center;gap:7px;
+}
+.sb-brand span{color:var(--pink-500)}
+.app-sidebar.slim .sb-brand-text{opacity:0;width:0}
+.sb-collapse{
+  width:28px;height:28px;border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--sand);color:var(--text-muted);
+  font-size:.75rem;cursor:pointer;transition:var(--t);flex-shrink:0;
+}
+[data-theme="dark"] .sb-collapse{background:var(--surface-2)}
+.sb-collapse:hover{background:var(--pink-100);color:var(--pink-500)}
+.sb-user{
+  margin:0 10px 14px;padding:12px;border-radius:var(--r-lg);
+  background:linear-gradient(135deg,var(--pink-25),var(--pink-50));
+  border:1px solid var(--pink-100);
+  display:flex;align-items:center;gap:9px;overflow:hidden;
+}
+[data-theme="dark"] .sb-user{background:var(--surface-2);border-color:var(--border)}
+.sb-av{
+  width:36px;height:36px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pink-300),var(--pink-500));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:.85rem;overflow:hidden;
+}
+.sb-user-info{overflow:hidden;transition:opacity .2s;white-space:nowrap}
+.app-sidebar.slim .sb-user-info{opacity:0}
+.sb-name{font-size:.83rem;font-weight:600;display:block}
+.sb-plan{font-size:.7rem;color:var(--pink-500)}
+.sb-section{
+  padding:4px 14px;font-size:.65rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted);
+  white-space:nowrap;overflow:hidden;transition:opacity .2s;
+}
+.app-sidebar.slim .sb-section{opacity:0}
+.sb-nav{display:flex;flex-direction:column;gap:1px;padding:0 6px}
+.sb-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 9px;border-radius:var(--r-md);
+  font-size:.83rem;font-weight:500;color:var(--text-secondary);
+  cursor:pointer;transition:var(--t);white-space:nowrap;overflow:hidden;
+  position:relative;
+}
+.sb-item:hover{background:var(--pink-25);color:var(--pink-500)}
+[data-theme="dark"] .sb-item:hover{background:var(--accent-light)}
+.sb-item.active{background:var(--pink-50);color:var(--pink-500);font-weight:600}
+[data-theme="dark"] .sb-item.active{background:var(--accent-light)}
+.sb-item.active::before{
+  content:'';position:absolute;left:0;top:18%;bottom:18%;
+  width:3px;background:var(--pink-500);border-radius:0 3px 3px 0;
+}
+.sb-icon{font-size:.95rem;flex-shrink:0;width:18px;text-align:center}
+.sb-lbl{transition:opacity .2s}
+.app-sidebar.slim .sb-lbl{opacity:0;width:0}
+.sb-badge{
+  margin-left:auto;flex-shrink:0;
+  min-width:17px;height:17px;padding:0 4px;
+  background:var(--pink-500);color:#fff;border-radius:99px;
+  font-size:.62rem;font-weight:700;display:flex;align-items:center;justify-content:center;
+  transition:opacity .2s;
+}
+.app-sidebar.slim .sb-badge{opacity:0;width:0}
+.sb-bottom{margin-top:auto;padding:10px 6px 16px}
+
+/* App topbar */
+.app-topbar{
+  height:var(--topbar);background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;gap:14px;position:sticky;top:52px;z-index:100;
+}
+.app-topbar-left{display:flex;align-items:center;gap:12px;flex:1}
+.app-topbar-title{font-family:var(--font-display);font-size:1.15rem;font-weight:600;white-space:nowrap}
+.app-search{
+  display:flex;align-items:center;gap:9px;
+  background:var(--sand);border:1.5px solid var(--border-2);
+  border-radius:var(--r-full);padding:8px 16px;
+  flex:1;max-width:340px;transition:var(--t);
+}
+[data-theme="dark"] .app-search{background:var(--surface-2);border-color:var(--border)}
+.app-search:focus-within{border-color:var(--pink-300);box-shadow:0 0 0 3px rgba(224,48,94,.08)}
+.app-search input{background:none;font-size:.83rem;color:var(--text-primary);flex:1;min-width:0}
+.app-search input::placeholder{color:var(--text-muted)}
+.app-search i{color:var(--text-muted);font-size:.8rem;flex-shrink:0}
+.app-topbar-right{display:flex;align-items:center;gap:7px}
+.tb-btn{
+  width:38px;height:38px;border-radius:var(--r-sm);
+  display:flex;align-items:center;justify-content:center;
+  background:var(--sand);border:1px solid var(--border);
+  color:var(--text-secondary);font-size:.85rem;cursor:pointer;
+  transition:var(--t);position:relative;
+}
+[data-theme="dark"] .tb-btn{background:var(--surface-2)}
+.tb-btn:hover{background:var(--pink-50);color:var(--pink-500);border-color:var(--pink-200)}
+.tb-av{
+  width:38px;height:38px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink-300),var(--pink-500));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-weight:700;font-size:.85rem;cursor:pointer;overflow:hidden;
+}
+/* Notification dropdown */
+.notif-drop{
+  position:absolute;top:calc(100% + 6px);right:0;
+  width:300px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);box-shadow:var(--shadow-lg);z-index:500;
+  opacity:0;visibility:hidden;transform:translateY(-6px);
+  transition:all .2s cubic-bezier(.4,0,.2,1);
+}
+.notif-drop.open{opacity:1;visibility:visible;transform:translateY(0)}
+.nd-head{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.nd-title{font-size:.88rem;font-weight:700}
+.nd-clear{font-size:.74rem;color:var(--pink-500);cursor:pointer}
+.nd-list{max-height:260px;overflow-y:auto;padding:6px}
+.nd-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:10px;border-radius:var(--r-md);cursor:pointer;transition:var(--t);
+}
+.nd-item:hover{background:var(--pink-25)}
+[data-theme="dark"] .nd-item:hover{background:var(--surface-2)}
+.nd-ico{
+  width:32px;height:32px;border-radius:50%;flex-shrink:0;
+  background:var(--pink-50);color:var(--pink-500);
+  display:flex;align-items:center;justify-content:center;font-size:.78rem;
+}
+.nd-text{flex:1}.nd-ttl{font-size:.8rem;font-weight:600}
+.nd-time{font-size:.7rem;color:var(--text-muted)}
+.nd-footer{padding:10px 16px;border-top:1px solid var(--border);text-align:center;font-size:.78rem;color:var(--pink-500);cursor:pointer}
+
+/* App main */
+.app-main{flex:1;min-width:0;overflow-y:auto}
+.app-content{padding:20px;min-height:calc(100vh - 52px - var(--topbar))}
+.inner{display:none}.inner.active{display:block;animation:fadeUp .25s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ═══════════════════════════════════════════════════════════
+   DASHBOARD PANEL — matches image layout
+═══════════════════════════════════════════════════════════ */
+
+/* Welcome row */
+.dash-welcome{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:18px;gap:16px;flex-wrap:wrap;
+}
+.dash-welcome-left h2{font-family:var(--font-display);font-size:1.6rem;font-weight:600;margin-bottom:4px}
+.dash-welcome-left p{font-size:.86rem;color:var(--text-secondary)}
+.dash-upload-btn{
+  padding:10px 20px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--pink-500),var(--pink-400));
+  color:#fff;font-size:.82rem;font-weight:600;
+  display:flex;align-items:center;gap:7px;
+  box-shadow:0 3px 14px rgba(224,48,94,.25);transition:var(--t);
+  white-space:nowrap;margin-top:12px;
+}
+.dash-upload-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(224,48,94,.35)}
+
+/* Main dash layout */
+.dash-grid{
+  display:grid;
+  grid-template-columns:200px 1fr 220px;
+  grid-template-rows:auto auto auto;
+  gap:16px;
+}
+
+/* Col 1: weather + wardrobe list */
+.dash-col1{display:flex;flex-direction:column;gap:14px}
+.weather-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:18px;
+  display:flex;align-items:center;gap:10px;
+}
+.weather-icon-wrap{font-size:2.2rem;line-height:1}
+.weather-temp{font-family:var(--font-display);font-size:1.8rem;font-weight:600;color:var(--text-primary)}
+.weather-cond{font-size:.78rem;color:var(--text-muted);margin-top:1px}
+.wardrobe-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);overflow:hidden;flex:1;
+}
+.wardrobe-card-img{height:120px;overflow:hidden;position:relative;background:var(--pink-50)}
+.wardrobe-card-body{padding:14px}
+.wardrobe-card-title{font-family:var(--font-display);font-size:1rem;font-weight:600;margin-bottom:10px}
+.wardrobe-items-list{display:flex;flex-direction:column;gap:7px}
+.wb-row{display:flex;align-items:center;gap:8px}
+.wb-icon{
+  width:28px;height:28px;border-radius:var(--r-sm);
+  flex-shrink:0;overflow:hidden;background:var(--pink-50);
+  display:flex;align-items:center;justify-content:center;font-size:1rem;
+}
+.wb-label{font-size:.8rem;color:var(--text-secondary);flex:1}
+.wb-count{font-size:.8rem;font-weight:600;color:var(--text-primary)}
+.view-wb-btn{
+  width:100%;padding:9px;margin-top:12px;border-radius:var(--r-full);
+  background:var(--pink-50);border:1.5px solid var(--pink-200);
+  color:var(--pink-600);font-size:.78rem;font-weight:600;
+  transition:var(--t);
+}
+.view-wb-btn:hover{background:var(--pink-100);border-color:var(--pink-400)}
+
+/* Col 2: outfit suggestions */
+.outfit-suggest-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:18px;
+}
+.outfit-suggest-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px}
+.outfit-suggest-title{font-family:var(--font-display);font-size:1.15rem;font-weight:600}
+.outfit-suggest-title strong{color:var(--pink-500);font-style:italic}
+.occasion-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.occ-tab{
+  padding:6px 14px;border-radius:var(--r-full);
+  font-size:.76rem;font-weight:500;color:var(--text-secondary);
+  background:var(--sand);border:1.5px solid transparent;
+  cursor:pointer;transition:var(--t);
+  display:flex;align-items:center;gap:5px;
+}
+[data-theme="dark"] .occ-tab{background:var(--surface-2)}
+.occ-tab:hover{border-color:var(--pink-200);color:var(--pink-500)}
+.occ-tab.active{
+  background:var(--pink-500);color:#fff;
+  box-shadow:0 3px 10px rgba(224,48,94,.25);
+  border-color:transparent;
+}
+.outfit-cards-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;
+}
+.outfit-card-sm{
+  background:var(--pink-25);border:1px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;cursor:pointer;
+  transition:var(--t);position:relative;
+}
+[data-theme="dark"] .outfit-card-sm{background:var(--surface-2)}
+.outfit-card-sm:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--pink-200)}
+.outfit-img-wrap{height:180px;overflow:hidden;background:var(--sand);position:relative}
+[data-theme="dark"] .outfit-img-wrap{background:var(--surface)}
+.outfit-img-wrap img{transition:transform .5s ease}
+.outfit-card-sm:hover .outfit-img-wrap img{transform:scale(1.05)}
+.outfit-card-sm-label{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 10px;
+}
+.outfit-card-sm-name{font-size:.78rem;font-weight:600;color:var(--text-primary)}
+.outfit-card-sm-arrow{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--pink-100);color:var(--pink-500);
+  display:flex;align-items:center;justify-content:center;font-size:.62rem;
+}
+.gen-more-btn{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:12px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--pink-500),var(--pink-400));
+  color:#fff;font-size:.83rem;font-weight:600;
+  box-shadow:0 4px 16px rgba(224,48,94,.3);transition:var(--t);
+  margin:0 auto;width:fit-content;min-width:200px;
+}
+.gen-more-btn:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(224,48,94,.4)}
+
+/* Col 3: insights */
+.dash-col3{display:flex;flex-direction:column;gap:14px}
+.insights-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:18px;
+}
+.insights-title{font-family:var(--font-display);font-size:.95rem;font-weight:600;margin-bottom:14px}
+.donut-wrap{position:relative;width:130px;height:130px;margin:0 auto 14px}
+.donut-wrap svg{width:100%;height:100%;transform:rotate(-90deg)}
+.donut-center{
+  position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.donut-center-pct{font-family:var(--font-display);font-size:1.2rem;font-weight:600;color:var(--text-primary)}
+.donut-center-lbl{font-size:.65rem;color:var(--text-muted)}
+.donut-legend{display:flex;flex-direction:column;gap:6px}
+.dl-item{display:flex;align-items:center;gap:7px;font-size:.75rem;color:var(--text-secondary)}
+.dl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dl-pct{margin-left:auto;font-weight:600;font-size:.72rem;color:var(--text-primary)}
+.view-analytics-btn{
+  width:100%;padding:9px;margin-top:12px;border-radius:var(--r-full);
+  background:linear-gradient(135deg,var(--pink-500),var(--pink-400));
+  color:#fff;font-size:.78rem;font-weight:600;
+  box-shadow:0 3px 12px rgba(224,48,94,.25);transition:var(--t);
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.view-analytics-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(224,48,94,.35)}
+
+/* Row 3: wardrobe summary + most worn */
+.dash-row3{
+  grid-column:2/-1;
+  display:grid;grid-template-columns:1fr auto;gap:14px;
+}
+.row3-wardrobe{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:16px;
+  display:flex;align-items:center;gap:16px;flex-wrap:wrap;
+}
+.row3-wb-title{font-family:var(--font-display);font-size:.95rem;font-weight:600;margin-right:8px}
+.row3-wb-items{display:flex;gap:16px;align-items:center;flex-wrap:wrap;flex:1}
+.row3-wb-item{display:flex;align-items:center;gap:7px;font-size:.78rem;color:var(--text-secondary)}
+.row3-wb-icon{font-size:1.1rem;color:var(--text-muted)}
+.row3-wb-count{font-weight:600;color:var(--text-primary)}
+.most-worn-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:14px;
+  display:flex;gap:12px;align-items:center;min-width:260px;
+}
+.most-worn-img{width:70px;height:80px;border-radius:var(--r-md);overflow:hidden;flex-shrink:0;background:var(--pink-50)}
+.most-worn-info{flex:1}
+.most-worn-label{font-size:.7rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.most-worn-name{font-size:.9rem;font-weight:600;margin-bottom:3px}
+.most-worn-count{font-size:.75rem;color:var(--pink-500);font-weight:500}
+
+/* ═══════════════════════════════════════════════════════════
+   WARDROBE PANEL
+═══════════════════════════════════════════════════════════ */
+.page-header{margin-bottom:18px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.page-header-left h2{font-family:var(--font-display);font-size:1.35rem;font-weight:600;margin-bottom:3px}
+.page-header-left p{font-size:.82rem;color:var(--text-muted)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.tool-search{
+  flex:1;min-width:180px;display:flex;align-items:center;gap:8px;
+  background:var(--surface);border:1.5px solid var(--border-2);
+  border-radius:var(--r-full);padding:9px 15px;transition:var(--t);
+}
+.tool-search:focus-within{border-color:var(--pink-300)}
+.tool-search input{background:none;font-size:.83rem;color:var(--text-primary);flex:1;min-width:0}
+.tool-search input::placeholder{color:var(--text-muted)}
+.filter-chips{display:flex;gap:7px;flex-wrap:wrap}
+.f-chip{
+  padding:7px 14px;border-radius:var(--r-full);
+  font-size:.76rem;font-weight:500;
+  background:var(--surface);border:1.5px solid var(--border-2);
+  color:var(--text-secondary);cursor:pointer;transition:var(--t);
+}
+.f-chip:hover{border-color:var(--pink-300);color:var(--pink-500)}
+.f-chip.active{background:var(--pink-100);border-color:var(--pink-400);color:var(--pink-600)}
+[data-theme="dark"] .f-chip.active{background:var(--accent-light)}
+.clothes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:14px}
+.cloth-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;transition:var(--t);cursor:pointer;
+}
+.cloth-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-md);border-color:var(--pink-200)}
+.cloth-img{height:170px;overflow:hidden;background:var(--pink-25);position:relative}
+.cloth-img img{transition:transform .5s ease}
+.cloth-card:hover .cloth-img img{transform:scale(1.06)}
+.cloth-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,0);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:var(--t);
+}
+.cloth-card:hover .cloth-overlay{background:rgba(0,0,0,.22)}
+.ov-btn{
+  width:32px;height:32px;border-radius:50%;
+  background:#fff;color:var(--espresso);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;opacity:0;transform:scale(.8);transition:var(--t);cursor:pointer;
+}
+.cloth-card:hover .ov-btn{opacity:1;transform:scale(1)}
+.ov-btn:hover{background:var(--pink-500);color:#fff}
+.cloth-info{padding:10px 12px}
+.cloth-name{font-size:.83rem;font-weight:600;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cloth-meta{display:flex;justify-content:space-between;align-items:center}
+.cloth-brand{font-size:.72rem;color:var(--text-muted)}
+.cloth-tag{
+  padding:2px 8px;border-radius:var(--r-full);
+  font-size:.65rem;font-weight:600;background:var(--pink-100);color:var(--pink-600);
+}
+[data-theme="dark"] .cloth-tag{background:var(--accent-light)}
+.upload-box{
+  height:238px;border:2px dashed var(--pink-200);
+  border-radius:var(--r-lg);background:var(--pink-25);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  cursor:pointer;transition:var(--t);
+}
+[data-theme="dark"] .upload-box{background:var(--surface-2);border-color:var(--border)}
+.upload-box:hover{border-color:var(--pink-500);background:var(--pink-50)}
+.upload-box i{font-size:1.8rem;color:var(--pink-300)}
+.upload-box span{font-size:.8rem;color:var(--text-muted)}
+
+/* ═══════════════════════════════════════════════════════════
+   OUTFIT RECOMMENDATIONS
+═══════════════════════════════════════════════════════════ */
+.outfit-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+.outfit-card-lg{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);overflow:hidden;transition:var(--t);
+}
+.outfit-card-lg:hover{transform:translateY(-5px);box-shadow:var(--shadow-lg)}
+.outfit-card-img{height:230px;background:var(--pink-25);position:relative;overflow:hidden}
+.outfit-card-img img{transition:transform .5s ease}
+.outfit-card-lg:hover .outfit-card-img img{transform:scale(1.05)}
+.outfit-fav{
+  position:absolute;top:10px;right:10px;
+  width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.85);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--text-muted);font-size:.85rem;cursor:pointer;transition:var(--t);
+}
+.outfit-fav:hover,.outfit-fav.active{color:var(--pink-500);background:rgba(255,255,255,.95)}
+.outfit-card-body{padding:14px}
+.outfit-card-name{font-family:var(--font-display);font-size:1rem;font-weight:600;margin-bottom:5px}
+.outfit-card-meta{font-size:.76rem;color:var(--text-muted);margin-bottom:10px}
+.outfit-pieces{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
+.piece-tag{
+  padding:3px 9px;border-radius:var(--r-full);
+  background:var(--pink-50);color:var(--pink-600);
+  font-size:.7rem;font-weight:500;
+}
+[data-theme="dark"] .piece-tag{background:var(--accent-light)}
+.match-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  padding:3px 9px;border-radius:var(--r-full);
+  background:#e8f5ee;color:#1e7a42;font-size:.72rem;font-weight:600;
+}
+[data-theme="dark"] .match-badge{background:rgba(30,122,66,.15)}
+.acc-section-title{font-family:var(--font-display);font-size:1rem;font-weight:600;margin-bottom:12px}
+.acc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.acc-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:14px;text-align:center;
+  transition:var(--t);cursor:pointer;
+}
+.acc-card:hover{border-color:var(--pink-300);transform:translateY(-3px);box-shadow:var(--shadow-sm)}
+.acc-emoji{font-size:1.6rem;margin-bottom:8px;display:block}
+.acc-name{font-size:.78rem;font-weight:600;margin-bottom:2px}
+.acc-match{font-size:.7rem;color:var(--pink-500)}
+
+/* ═══════════════════════════════════════════════════════════
+   ANALYTICS
+═══════════════════════════════════════════════════════════ */
+.analytics-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.a-kpi-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:18px;transition:var(--t);
+}
+.a-kpi-card:hover{box-shadow:var(--shadow-sm);transform:translateY(-2px)}
+.a-kpi-icon{
+  width:38px;height:38px;border-radius:var(--r-sm);
+  background:var(--pink-50);color:var(--pink-500);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.95rem;margin-bottom:12px;
+}
+.a-kpi-val{font-family:var(--font-display);font-size:1.75rem;font-weight:600;margin-bottom:3px}
+.a-kpi-label{font-size:.76rem;color:var(--text-muted)}
+.a-kpi-change{font-size:.72rem;margin-top:6px;display:flex;align-items:center;gap:3px}
+.ch-up{color:#1e7a42}.ch-dn{color:var(--pink-500)}
+.analytics-charts{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:20px}
+.chart-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:18px;
+}
+.chart-card h4{font-size:.9rem;font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center}
+.bar-chart-wrap{display:flex;align-items:flex-end;gap:8px;height:150px;padding:0 4px}
+.bar-grp{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.bar{
+  width:100%;border-radius:4px 4px 0 0;
+  background:linear-gradient(to top,var(--pink-500),var(--pink-300));
+  opacity:.8;transition:var(--t);cursor:pointer;min-height:3px;
+}
+.bar:hover{opacity:1;transform:scaleY(1.02);transform-origin:bottom}
+.bar-lbl{font-size:.66rem;color:var(--text-muted)}
+.analytics-bottom{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.timeline-list{display:flex;flex-direction:column;gap:0}
+.tl-item{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid var(--border)}
+.tl-item:last-child{border-bottom:none}
+.tl-dot-wrap{position:relative;display:flex;flex-direction:column;align-items:center}
+.tl-dot{width:9px;height:9px;border-radius:50%;background:var(--pink-400);margin-top:4px;box-shadow:0 0 0 3px rgba(224,48,94,.15)}
+.tl-line{flex:1;width:1px;background:var(--border);margin-top:4px}
+.tl-item:last-child .tl-line{display:none}
+.tl-title{font-size:.84rem;font-weight:600;margin-bottom:2px}
+.tl-meta{font-size:.74rem;color:var(--text-muted)}
+
+/* ═══════════════════════════════════════════════════════════
+   ADMIN PANEL
+═══════════════════════════════════════════════════════════ */
+.admin-kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:20px}
+.admin-grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:14px;margin-bottom:20px}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead th{text-align:left;padding:10px 12px;font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);border-bottom:2px solid var(--border)}
+tbody td{padding:11px 12px;font-size:.82rem;border-bottom:1px solid var(--border);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:var(--pink-25)}
+[data-theme="dark"] tbody tr:hover td{background:var(--surface-2)}
+.t-user{display:flex;align-items:center;gap:9px}
+.t-av{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  background:linear-gradient(135deg,var(--pink-300),var(--pink-500));
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;font-size:.75rem;font-weight:700;
+}
+.t-name{font-weight:600;display:block}
+.t-email{font-size:.72rem;color:var(--text-muted)}
+.status-badge{
+  padding:3px 9px;border-radius:var(--r-full);
+  font-size:.7rem;font-weight:600;
+}
+.s-active{background:#e8f5ee;color:#1e7a42}
+.s-suspended{background:#fff0e0;color:#a05000}
+.s-inactive{background:var(--sand);color:var(--text-muted)}
+[data-theme="dark"] .s-active{background:rgba(30,122,66,.15)}
+[data-theme="dark"] .s-inactive{background:var(--surface-2)}
+.act-log{display:flex;flex-direction:column;gap:8px}
+.act-item{
+  display:flex;gap:10px;align-items:flex-start;
+  padding:9px;border-radius:var(--r-md);
+  background:var(--sand);
+}
+[data-theme="dark"] .act-item{background:var(--surface-2)}
+.act-ico{
+  width:30px;height:30px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:.76rem;
+}
+.ai-pink{background:var(--pink-50);color:var(--pink-500)}
+.ai-blue{background:#e8f0ff;color:#2040a0}
+.ai-green{background:#e8f5ee;color:#1e7a42}
+.ai-amber{background:#fff0e0;color:#a05000}
+[data-theme="dark"] .ai-blue{background:rgba(32,64,160,.15)}
+[data-theme="dark"] .ai-green{background:rgba(30,122,66,.15)}
+.act-title{font-size:.8rem;font-weight:600;margin-bottom:1px}
+.act-time{font-size:.7rem;color:var(--text-muted)}
+.mod-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.mod-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-lg);padding:14px;transition:var(--t);
+}
+.mod-card:hover{border-color:var(--pink-200)}
+.mod-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mod-card-title{font-size:.82rem;font-weight:600}
+.mod-desc{font-size:.76rem;color:var(--text-muted);margin-bottom:10px}
+.mod-actions{display:flex;gap:6px}
+.mod-approve{padding:5px 12px;border-radius:var(--r-full);background:#e8f5ee;color:#1e7a42;font-size:.72rem;font-weight:600;cursor:pointer;border:none;transition:var(--t)}
+.mod-approve:hover{background:#1e7a42;color:#fff}
+.mod-reject{padding:5px 12px;border-radius:var(--r-full);background:var(--pink-50);color:var(--pink-600);font-size:.72rem;font-weight:600;cursor:pointer;border:none;transition:var(--t)}
+.mod-reject:hover{background:var(--pink-500);color:#fff}
+
+/* ═══════════════════════════════════════════════════════════
+   NOTIFICATIONS PANEL
+═══════════════════════════════════════════════════════════ */
+.notif-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:16px}
+.notif-list{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+.notif-item{
+  display:flex;gap:12px;align-items:flex-start;
+  padding:13px;border-radius:var(--r-lg);
+  background:var(--surface);border:1px solid var(--border);
+  transition:var(--t);cursor:pointer;position:relative;
+}
+.notif-item:hover{border-color:var(--pink-200);box-shadow:var(--shadow-xs)}
+.notif-item.unread::before{
+  content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);
+  width:3px;height:55%;border-radius:0 3px 3px 0;background:var(--pink-500);
+}
+.notif-ico{
+  width:38px;height:38px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:.88rem;
+}
+.ni-pink{background:var(--pink-50);color:var(--pink-500)}
+.ni-amber{background:#fff0e0;color:#a05000}
+.ni-blue{background:#e8f0ff;color:#2040a0}
+.notif-content{flex:1;min-width:0}
+.notif-title{font-size:.85rem;font-weight:600;margin-bottom:2px}
+.notif-desc{font-size:.77rem;color:var(--text-muted);line-height:1.5}
+.notif-time{font-size:.68rem;color:var(--text-muted);margin-top:4px}
+.alert-item{
+  display:flex;gap:10px;align-items:center;
+  padding:13px;border-radius:var(--r-lg);margin-bottom:9px;
+}
+.alert-weather{background:#fff8e8;border:1px solid #f0e0a0}
+.alert-outfit{background:var(--pink-25);border:1px solid var(--pink-100)}
+[data-theme="dark"] .alert-weather{background:rgba(255,200,60,.06);border-color:rgba(255,200,60,.2)}
+[data-theme="dark"] .alert-outfit{background:var(--accent-light);border-color:rgba(224,48,94,.2)}
+.alert-emoji{font-size:1.2rem;flex-shrink:0}
+.alert-t{font-size:.82rem;font-weight:600;margin-bottom:2px}
+.alert-d{font-size:.75rem;color:var(--text-muted)}
+.rating-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-xl);padding:20px;margin-bottom:14px;text-align:center;
+}
+.rating-img{width:100%;height:140px;border-radius:var(--r-lg);overflow:hidden;margin-bottom:14px;background:var(--pink-25)}
+.rating-name{font-family:var(--font-display);font-size:1rem;font-weight:600;margin-bottom:3px}
+.rating-prompt{font-size:.78rem;color:var(--text-muted);margin-bottom:14px}
+.stars{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.star-btn{font-size:1.5rem;color:var(--taupe);cursor:pointer;transition:var(--t)}
+.star-btn:hover,.star-btn.on{color:#e8a04a;transform:scale(1.15)}
+.rate-ta{
+  width:100%;padding:10px 12px;
+  background:var(--sand);border:1.5px solid var(--border-2);
+  border-radius:var(--r-md);font-size:.82rem;color:var(--text-primary);
+  resize:none;transition:var(--t);margin-bottom:12px;
+}
+[data-theme="dark"] .rate-ta{background:var(--surface-2);border-color:var(--border)}
+.rate-ta:focus{border-color:var(--pink-300)}
+
+/* ═══════════════════════════════════════════════════════════
+   MODAL
+═══════════════════════════════════════════════════════════ */
+.modal-bg{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.45);backdrop-filter:blur(5px);
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;visibility:hidden;transition:all .25s;padding:16px;
+}
+.modal-bg.open{opacity:1;visibility:visible}
+.modal{
+  background:var(--surface);border-radius:var(--r-xl);
+  padding:28px;max-width:460px;width:100%;
+  box-shadow:var(--shadow-lg);
+  transform:scale(.94);transition:transform .25s;
+}
+.modal-bg.open .modal{transform:scale(1)}
+.modal-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+.modal-title{font-family:var(--font-display);font-size:1.15rem;font-weight:600}
+.modal-close{
+  width:28px;height:28px;border-radius:50%;
+  background:var(--sand);color:var(--text-muted);
+  display:flex;align-items:center;justify-content:center;
+  font-size:.8rem;cursor:pointer;transition:var(--t);
+}
+.modal-close:hover{background:var(--pink-100);color:var(--pink-500)}
+.form-select{
+  width:100%;padding:11px 14px;
+  background:var(--sand);border:1.5px solid var(--border-2);
+  border-radius:var(--r-md);font-size:.85rem;color:var(--text-primary);
+  margin-bottom:12px;transition:var(--t);
+}
+[data-theme="dark"] .form-select{background:var(--surface-2);border-color:var(--border)}
+.form-select:focus{border-color:var(--pink-400)}
+
+/* FAB */
+.fab{
+  position:fixed;bottom:24px;right:24px;z-index:600;
+  width:50px;height:50px;border-radius:50%;
+  background:linear-gradient(135deg,var(--pink-500),var(--pink-400));
+  color:#fff;font-size:1rem;cursor:pointer;
+  display:none;align-items:center;justify-content:center;
+  box-shadow:0 6px 22px rgba(224,48,94,.4);transition:var(--t);
+}
+.fab.show{display:flex}
+.fab:hover{transform:scale(1.08);box-shadow:0 10px 30px rgba(224,48,94,.5)}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════ */
+.card-title{font-family:var(--font-display);font-size:.95rem;font-weight:600;margin-bottom:14px}
+.flex{display:flex}.items-center{align-items:center}.justify-between{justify-content:space-between}
+.gap-2{gap:8px}.gap-3{gap:12px}.gap-4{gap:16px}
+.mt-2{margin-top:8px}.mt-3{margin-top:12px}.mt-4{margin-top:16px}.mb-4{margin-bottom:16px}
+.text-sm{font-size:.82rem}.text-xs{font-size:.72rem}.text-muted{color:var(--text-muted)}
+.font-semibold{font-weight:600}.w-full{width:100%}
+.col2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.relative{position:relative}
+.section-divider{height:1px;background:var(--border);margin:18px 0;border:none}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════════════════════ */
+@media(max-width:1100px){
+  .dash-grid{grid-template-columns:180px 1fr;grid-template-rows:auto}
+  .dash-col3{grid-row:1;grid-column:1;flex-direction:row;flex-wrap:wrap}
+  .dash-row3{grid-column:1/-1}
+  .outfit-cards-row{grid-template-columns:repeat(3,1fr)}
+  .analytics-charts{grid-template-columns:1fr}
+  .admin-grid2{grid-template-columns:1fr}
+  .feat-grid,.testi-grid{grid-template-columns:1fr 1fr}
+  .foot-grid{grid-template-columns:1fr 1fr}
+  .analytics-kpi{grid-template-columns:repeat(2,1fr)}
+  .admin-kpi{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .hero-right{display:none}
+  #pg-auth{grid-template-columns:1fr}
+  .auth-visual{display:none}
+  .dash-grid{grid-template-columns:1fr}
+  .dash-col3{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .outfit-grid{grid-template-columns:1fr 1fr}
+  .acc-grid{grid-template-columns:1fr 1fr}
+  .notif-layout{grid-template-columns:1fr}
+  .analytics-bottom{grid-template-columns:1fr}
+  .mod-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  .gnav-links{display:none}
+  .mob-menu-btn{display:flex}
+  .app-sidebar{
+    position:fixed;top:52px;left:0;bottom:0;
+    transform:translateX(-100%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    z-index:400;box-shadow:var(--shadow-lg);
+  }
+  .app-sidebar.mobile-open{transform:translateX(0);width:var(--sidebar)!important}
+  .sb-overlay{
+    display:none;position:fixed;inset:0;z-index:350;
+    background:rgba(0,0,0,.35);backdrop-filter:blur(2px);
+  }
+  .sb-overlay.show{display:block}
+  .app-topbar{padding:0 14px}
+  .app-search{max-width:none;flex:1}
+  .hero-left{padding:48px 20px}
+  .hero-title{font-size:2.6rem}
+  .land-section{padding:56px 20px}
+  .feat-grid,.testi-grid{grid-template-columns:1fr}
+  .outfit-cards-row{grid-template-columns:repeat(2,1fr)}
+  .outfit-grid{grid-template-columns:1fr}
+  .acc-grid{grid-template-columns:1fr 1fr}
+  .auth-form-wrap{padding:36px 22px}
+  .analytics-kpi,.admin-kpi{grid-template-columns:1fr 1fr}
+  .clothes-grid{grid-template-columns:repeat(2,1fr)}
+  .dash-row3{flex-direction:column}
+  .row3-wardrobe{flex-direction:column;align-items:flex-start}
+  .most-worn-card{min-width:0;width:100%}
+  .mod-grid{grid-template-columns:1fr}
+  .foot-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .hero-title{font-size:2.1rem}
+  .analytics-kpi,.admin-kpi{grid-template-columns:1fr}
+  .hero-btns{flex-direction:column;align-items:flex-start}
+  .clothes-grid{grid-template-columns:1fr}
+  .outfit-cards-row{grid-template-columns:repeat(2,1fr)}
+  .col2{grid-template-columns:1fr}
+  .social-btns{grid-template-columns:1fr}
+  .occasion-tabs{gap:5px}
+  .occ-tab{font-size:.7rem;padding:5px 10px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LOADER ═══ -->
+<div id="loader">
+  <div class="loader-brand">Outfit Styling System</div>
+  <div class="loader-track"><div class="loader-fill"></div></div>
+  <div class="text-xs" style="color:var(--text-muted);letter-spacing:.1em">Curating your wardrobe…</div>
+</div>
+
+<!-- ═══ GLOBAL NAV ═══ -->
+<nav id="gnav">
+  <div class="gnav-logo">
+    <i class="fas fa-tshirt" style="color:var(--pink-400)"></i>
+    Outfit Styling <span>System</span>
+  </div>
+  <div class="gnav-links">
+    <span class="gnav-link active" onclick="showPage('landing')">Home</span>
+    <span class="gnav-link" onclick="showPage('auth')">Login</span>
+    <span class="gnav-link" onclick="showApp('dashboard')">Dashboard</span>
+    <span class="gnav-link" onclick="showApp('wardrobe')">Wardrobe</span>
+    <span class="gnav-link" onclick="showApp('outfits')">Outfits</span>
+    <span class="gnav-link" onclick="showApp('analytics')">Analytics</span>
+    <span class="gnav-link" onclick="showApp('admin')">Admin</span>
+  </div>
+  <div class="gnav-right">
+    <button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-moon" id="theme-ico"></i></button>
+    <button class="mob-menu-btn" onclick="toggleMobNav()"><i class="fas fa-bars"></i></button>
+  </div>
+</nav>
+<div class="mob-nav" id="mob-nav">
+  <div class="mob-nav-item" onclick="showPage('landing');closeMobNav()">Home</div>
+  <div class="mob-nav-item" onclick="showPage('auth');closeMobNav()">Sign In</div>
+  <div class="mob-nav-item" onclick="showApp('dashboard');closeMobNav()">Dashboard</div>
+  <div class="mob-nav-item" onclick="showApp('wardrobe');closeMobNav()">Wardrobe</div>
+  <div class="mob-nav-item" onclick="showApp('outfits');closeMobNav()">Outfits</div>
+  <div class="mob-nav-item" onclick="showApp('analytics');closeMobNav()">Analytics</div>
+  <div class="mob-nav-item" onclick="showApp('admin');closeMobNav()">Admin</div>
+  <div class="mob-nav-item" onclick="showApp('notifications');closeMobNav()">Notifications</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE: LANDING
+═══════════════════════════════════════════════════════════ -->
+<div class="page active" id="pg-landing">
+
+  <!-- Hero -->
+  <section class="hero" style="padding-top:52px">
+    <div class="hero-bg"></div>
+    <div class="hero-orb hero-orb-1"></div>
+    <div class="hero-orb hero-orb-2"></div>
+    <div class="hero-left">
+      <div class="hero-pill"><i class="fas fa-sparkles" style="font-size:.7rem"></i> AI-Powered Style Intelligence</div>
+      <h1 class="hero-title">Dress with<br/><em>intention</em><br/>every day.</h1>
+      <p class="hero-sub">Your AI wardrobe companion — recommending perfect outfits based on weather, occasion, and your personal style. Never face an empty-closet morning again.</p>
+      <div class="hero-btns">
+        <button class="btn-primary" onclick="showPage('auth')"><i class="fas fa-arrow-right"></i> Get Started</button>
+        <button class="btn-outline" onclick="showApp('outfits')"><i class="fas fa-tshirt"></i> Explore Styles</button>
+      </div>
+      <div class="hero-stats">
+        <div><div class="hero-stat-num">180K+</div><div class="hero-stat-label">Active Users</div></div>
+        <div><div class="hero-stat-num">2.4M</div><div class="hero-stat-label">Outfits Created</div></div>
+        <div><div class="hero-stat-num">98%</div><div class="hero-stat-label">Satisfaction</div></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="hero-img">
+        <img src="https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?w=900&q=80" alt="Fashion"/>
+      </div>
+      <div class="hero-badge">
+        <div class="hero-badge-label">Today's Pick</div>
+        <div class="hero-badge-val">Summer Chic ✨</div>
+        <div class="hero-badge-sub">98% weather match</div>
+      </div>
+      <div class="hero-badge-2">
+        <div class="hero-badge-label">Wardrobe</div>
+        <div class="hero-badge-val">47 pieces</div>
+        <div class="hero-badge-sub">+3 this week</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="land-section" style="background:var(--surface)">
+    <div class="land-section-center">
+      <div class="section-tag">Why Outfit Styling System</div>
+      <h2 class="section-h">Fashion intelligence<br/><em>beautifully engineered</em></h2>
+      <p class="section-sub">From smart AI recommendations to real-time weather styling, every feature is crafted for effortless elegance.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card"><div class="feat-icon"><i class="fas fa-brain"></i></div><h3>AI Style Engine</h3><p>Our recommendation model analyses your wardrobe, preferences, and lifestyle to suggest outfits you'll genuinely love.</p></div>
+      <div class="feat-card"><div class="feat-icon"><i class="fas fa-cloud-sun"></i></div><h3>Weather-Aware Styling</h3><p>Real-time weather data shapes every recommendation. Look great and feel comfortable — whatever the forecast.</p></div>
+      <div class="feat-card"><div class="feat-icon"><i class="fas fa-tshirt"></i></div><h3>Smart Wardrobe</h3><p>Digitise your entire closet, categorise each item, and discover hidden outfit combinations you never imagined.</p></div>
+      <div class="feat-card"><div class="feat-icon"><i class="fas fa-calendar-alt"></i></div><h3>Occasion Planner</h3><p>Wedding, office, beach or date night — plan the perfect look for every event on your calendar weeks ahead.</p></div>
+      <div class="feat-card"><div class="feat-icon"><i class="fas fa-chart-line"></i></div><h3>Wardrobe Analytics</h3><p>Discover which pieces you overuse and what's gathering dust. Make smarter, more sustainable shopping decisions.</p></div>
+      <div class="feat-card"><div class="feat-icon"><i class="fas fa-users"></i></div><h3>Style Community</h3><p>Share your looks, discover trends, and get inspired by a community of fashion-forward people just like you.</p></div>
+    </div>
+  </section>
+
+  <!-- Testimonials -->
+  <section class="land-section land-testi-bg">
+    <div class="land-section-center">
+      <div class="section-tag">Testimonials</div>
+      <h2 class="section-h">Loved by <em>thousands</em></h2>
+      <p class="section-sub">Real stories from real people who transformed their relationship with getting dressed.</p>
+    </div>
+    <div class="testi-grid">
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><p class="testi-quote">"Stylelux completely changed my mornings. I used to stress 30 minutes about what to wear — now it's done in seconds."</p><div class="testi-author"><div class="testi-av">S</div><div><div class="testi-name">Sarah Mitchell</div><div class="testi-role">Fashion Blogger</div></div></div></div>
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><p class="testi-quote">"The weather integration is genius. I live somewhere unpredictable — this app always has the right outfit ready."</p><div class="testi-author"><div class="testi-av" style="background:linear-gradient(135deg,#a0c0ff,#4060e0)">A</div><div><div class="testi-name">Aisha Rahman</div><div class="testi-role">Marketing Director</div></div></div></div>
+      <div class="testi-card"><div class="testi-stars">★★★★★</div><p class="testi-quote">"Analytics showed I only wore 40% of my wardrobe. Now I shop intentionally — I wear everything I own."</p><div class="testi-author"><div class="testi-av" style="background:linear-gradient(135deg,#a0e0b0,#20a050)">E</div><div><div class="testi-name">Zara Zarar</div><div class="testi-role">Sustainability Advocate</div></div></div></div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="foot-grid">
+      <div>
+        <div class="foot-brand">Outfit Styling System</div>
+        <p class="foot-desc">Your intelligent wardrobe companion — making every day a great outfit day.</p>
+        <div class="foot-socials" style="margin-top:18px">
+          <a class="foot-soc" href="#"><i class="fab fa-instagram"></i></a>
+          <a class="foot-soc" href="#"><i class="fab fa-tiktok"></i></a>
+          <a class="foot-soc" href="#"><i class="fab fa-twitter"></i></a>
+          <a class="foot-soc" href="#"><i class="fab fa-pinterest"></i></a>
+        </div>
+      </div>
+      <div class="foot-col"><h5>Product</h5><a class="foot-link" href="#">Features</a><a class="foot-link" href="#">Pricing</a><a class="foot-link" href="#">Mobile App</a></div>
+      <div class="foot-col"><h5>Company</h5><a class="foot-link" href="#">About</a><a class="foot-link" href="#">Blog</a><a class="foot-link" href="#">Careers</a></div>
+      <div class="foot-col"><h5>Support</h5><a class="foot-link" href="#">Help Centre</a><a class="foot-link" href="#">Privacy</a><a class="foot-link" href="#">Terms</a></div>
+    </div>
+    <div class="foot-bottom"><span>© 2025 Outfit Styling System. All rights reserved.</span><span>Made with ♥ for fashion lovers</span></div>
+  </footer>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     PAGE: AUTH
+═══════════════════════════════════════════════════════════ -->
+<div class="page" id="pg-auth">
+  <div id="auth-layout" style="padding-top:52px;min-height:100vh;display:grid;grid-template-columns:1fr 1fr">
+    <div class="auth-visual">
+      <div class="auth-visual-img"><img src="https://images.unsplash.com/photo-1611042553365-9b101441c135?w=900&q=80" alt="Fashion"/></div>
+      <p class="auth-visual-quote">"Style is a way to say who you are without having to speak."</p>
+      <p style="color:rgba(255,255,255,.6);font-size:.76rem;margin-top:8px;text-align:center">— Rachel Zoe</p>
+    </div>
+    <div class="auth-form-wrap">
+      <div class="auth-inner">
+        <div class="auth-tabs">
+          <div class="auth-tab active" id="tab-login" onclick="switchAuth('login')">Sign In</div>
+          <div class="auth-tab" id="tab-signup" onclick="switchAuth('signup')">Sign Up</div>
+        </div>
+        <!-- Login -->
+        <div class="auth-panel active" id="panel-login">
+          <h2 class="auth-title">Welcome back</h2>
+          <p class="auth-subtitle">Sign in to your wardrobe</p>
+          <label class="form-lbl">Email Address</label>
+          <input type="email" class="form-inp" placeholder="sara@example.com"/>
+          <label class="form-lbl">Password</label>
+          <div class="pw-wrap"><input type="password" class="form-inp" id="pw-login" placeholder="••••••••"/><i class="fas fa-eye pw-eye" onclick="togglePw('pw-login',this)"></i></div>
+          <div class="flex justify-between items-center" style="font-size:.78rem;margin-bottom:16px">
+            <label style="display:flex;align-items:center;gap:5px;color:var(--text-muted);cursor:pointer"><input type="checkbox" style="accent-color:var(--pink-500)"/> Remember me</label>
+            <a style="color:var(--pink-500);cursor:pointer">Forgot password?</a>
+          </div>
+          <button class="form-submit" onclick="showPage('pg-app')" onclick="showApp('dashboard')"><i class="fas fa-arrow-right"></i> Sign In</button>
+          <div class="auth-or">or continue with</div>
+          <div class="social-btns">
+            <button class="social-btn"><i class="fab fa-google" style="color:#ea4335"></i> Google</button>
+            <button class="social-btn"><i class="fab fa-apple"></i> Apple</button>
+          </div>
+          <div class="auth-switch">Don't have an account? <a onclick="switchAuth('signup')">Sign up free</a></div>
+        </div>
+        <!-- Signup -->
+        <div class="auth-panel" id="panel-signup">
+          <h2 class="auth-title">Create account</h2>
+          <p class="auth-subtitle">Start your style journey</p>
+          <div class="col2">
+            <div><label class="form-lbl">First Name</label><input type="text" class="form-inp" placeholder="Sara"/></div>
+            <div><label class="form-lbl">Last Name</label><input type="text" class="form-inp" placeholder="Ahmed"/></div>
+          </div>
+          <label class="form-lbl">Email Address</label>
+          <input type="email" class="form-inp" placeholder="sara@example.com"/>
+          <label class="form-lbl">Password</label>
+          <div class="pw-wrap"><input type="password" class="form-inp" id="pw-signup" placeholder="Min 8 characters"/><i class="fas fa-eye pw-eye" onclick="togglePw('pw-signup',this)"></i></div>
+          <label style="display:flex;align-items:flex-start;gap:7px;font-size:.78rem;color:var(--text-muted);margin-bottom:16px;cursor:pointer"><input type="checkbox" style="accent-color:var(--pink-500);margin-top:2px"/> I agree to the <a style="color:var(--pink-500)">Terms</a> & <a style="color:var(--pink-500)">Privacy Policy</a></label>
+          <button class="form-submit" onclick="showApp('dashboard')"><i class="fas fa-user-plus"></i> Create Account</button>
+          <div class="auth-or">or sign up with</div>
+          <div class="social-btns"><button class="social-btn"><i class="fab fa-google" style="color:#ea4335"></i> Google</button><button class="social-btn"><i class="fab fa-apple"></i> Apple</button></div>
+          <div class="auth-switch">Already have an account? <a onclick="switchAuth('login')">Sign in</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     APP SHELL
+═══════════════════════════════════════════════════════════ -->
+<div class="app-page" id="app-shell">
+  <div class="sb-overlay" id="sb-overlay" onclick="closeMobSidebar()"></div>
+
+  <!-- Sidebar -->
+  <aside class="app-sidebar" id="app-sidebar">
+    <div class="sb-head">
+      <div class="sb-brand"><i class="fas fa-tshirt" style="color:var(--pink-400);flex-shrink:0"></i><span class="sb-brand-text">Outfit <span style="color:var(--pink-500)">System</span></span></div>
+      <div class="sb-collapse" onclick="toggleSidebar()"><i class="fas fa-bars"></i></div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-av"><img src="https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=900&q=80" alt="Sara"/></div>
+      <div class="sb-user-info"><span class="sb-name">Sara Ahmed</span><span class="sb-plan">✦ Premium</span></div>
+    </div>
+    <div class="sb-section">Main Menu</div>
+    <nav class="sb-nav">
+      <div class="sb-item active" onclick="switchInner('dashboard',this)"><i class="fas fa-th-large sb-icon"></i><span class="sb-lbl">Dashboard</span></div>
+      <div class="sb-item" onclick="switchInner('wardrobe',this)"><i class="fas fa-tshirt sb-icon"></i><span class="sb-lbl">My Wardrobe</span><span class="sb-badge">47</span></div>
+      <div class="sb-item" onclick="switchInner('outfits',this)"><i class="fas fa-magic sb-icon"></i><span class="sb-lbl">Outfit Ideas</span></div>
+      <div class="sb-item" onclick="switchInner('analytics',this)"><i class="fas fa-chart-bar sb-icon"></i><span class="sb-lbl">Analytics</span></div>
+    </nav>
+    <div class="sb-section" style="margin-top:14px">System</div>
+    <nav class="sb-nav">
+      <div class="sb-item" onclick="switchInner('admin',this)"><i class="fas fa-shield-halved sb-icon"></i><span class="sb-lbl">Admin Panel</span></div>
+      <div class="sb-item" onclick="switchInner('notifications',this)"><i class="fas fa-bell sb-icon"></i><span class="sb-lbl">Notifications</span><span class="sb-badge">3</span></div>
+    </nav>
+    <div class="sb-bottom">
+      <nav class="sb-nav">
+        <div class="sb-item"><i class="fas fa-cog sb-icon"></i><span class="sb-lbl">Settings</span></div>
+        <div class="sb-item" onclick="showPage('landing')"><i class="fas fa-arrow-left sb-icon"></i><span class="sb-lbl">Back to Site</span></div>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="app-main">
+    <!-- App Topbar -->
+    <header class="app-topbar">
+      <div class="app-topbar-left">
+        <button class="tb-btn" id="mob-sb-btn" onclick="toggleMobSidebar()" style="display:none"><i class="fas fa-bars"></i></button>
+        <div class="app-topbar-title" id="inner-title">Dashboard</div>
+        <div class="app-search">
+          <i class="fas fa-search"></i>
+          <input type="text" placeholder="Search outfits or items…"/>
+        </div>
+      </div>
+      <div class="app-topbar-right">
+        <div class="relative">
+          <div class="tb-btn" onclick="toggleNotif()" style="position:relative">
+            <i class="fas fa-bell"></i>
+            <span style="position:absolute;top:-3px;right:-3px;width:9px;height:9px;border-radius:50%;background:var(--pink-500);border:2px solid var(--surface)"></span>
+          </div>
+          <div class="notif-drop" id="notif-drop">
+            <div class="nd-head"><div class="nd-title">Notifications</div><div class="nd-clear">Mark all read</div></div>
+            <div class="nd-list">
+              <div class="nd-item"><div class="nd-ico"><i class="fas fa-cloud-sun"></i></div><div class="nd-text"><div class="nd-ttl">Weather outfit ready</div><div class="nd-time">2 min ago</div></div></div>
+              <div class="nd-item"><div class="nd-ico" style="background:#e8f0ff;color:#2040a0"><i class="fas fa-star"></i></div><div class="nd-text"><div class="nd-ttl">New 97% match outfit!</div><div class="nd-time">1 hr ago</div></div></div>
+              <div class="nd-item"><div class="nd-ico" style="background:#e8f5ee;color:#1e7a42"><i class="fas fa-tshirt"></i></div><div class="nd-text"><div class="nd-ttl">3 items added</div><div class="nd-time">Yesterday</div></div></div>
+            </div>
+            <div class="nd-footer" onclick="switchInner('notifications',null)">View all →</div>
+          </div>
+        </div>
+        <button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-moon" id="theme-ico-app"></i></button>
+        <div class="tb-av"><img src="https://images.unsplash.com/photo-1603217192634-61068e4d4bf9?w=900&q=80" alt="Sara" style="border-radius:50%"/></div>
+        <span style="font-size:.82rem;font-weight:600;white-space:nowrap">Sara <i class="fas fa-chevron-down" style="font-size:.65rem;color:var(--text-muted)"></i></span>
+      </div>
+    </header>
+
+    <div class="app-content">
+
+      <!-- ══════════════════════════════════════
+           DASHBOARD INNER
+      ══════════════════════════════════════ -->
+      <div class="inner active" id="inner-dashboard">
+        <!-- Welcome Row -->
+        <div class="dash-welcome">
+          <div class="dash-welcome-left">
+            <h2>Welcome, Sara!</h2>
+            <p style="color:var(--text-secondary)">Find the perfect outfit for any occasion.</p>
+            <button class="dash-upload-btn" onclick="switchInner('wardrobe',null)">
+              <i class="fas fa-plus"></i> Upload New Item
+            </button>
+          </div>
+        </div>
+
+        <!-- Main 3-col grid -->
+        <div class="dash-grid">
+
+          <!-- Col 1: Weather + Wardrobe -->
+          <div class="dash-col1">
+            <div class="weather-card">
+              <div class="weather-icon-wrap">⛅</div>
+              <div>
+                <div class="weather-temp">23°C</div>
+                <div class="weather-cond">Sunny</div>
+              </div>
+            </div>
+            <div class="wardrobe-card">
+              <div class="wardrobe-card-img">
+                <img src="https://images.unsplash.com/photo-1623609163859-ca93c959b98a?w=900&q=80" alt="wardrobe"/>
+              </div>
+              <div class="wardrobe-card-body">
+                <div class="wardrobe-card-title">Your Wardrobe</div>
+                <div class="wardrobe-items-list">
+                  <div class="wb-row"><div class="wb-icon">👔</div><span class="wb-label">Tops</span><span class="wb-count">12</span></div>
+                  <div class="wb-row"><div class="wb-icon">👖</div><span class="wb-label">Bottoms</span><span class="wb-count">8</span></div>
+                  <div class="wb-row"><div class="wb-icon">👟</div><span class="wb-label">Shoes</span><span class="wb-count">5</span></div>
+                  <div class="wb-row"><div class="wb-icon">🧥</div><span class="wb-label">Outerwear</span><span class="wb-count">4</span></div>
+                  <div class="wb-row"><div class="wb-icon">👗</div><span class="wb-label">Dresses</span><span class="wb-count">7</span></div>
+                </div>
+                <button class="view-wb-btn" onclick="switchInner('wardrobe',null)">View Wardrobe</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Col 2: Today's Outfit Suggestions -->
+          <div class="outfit-suggest-card">
+            <div class="outfit-suggest-header">
+              <div class="outfit-suggest-title">Today's <strong>Outfit Suggestions</strong></div>
+              <div style="display:flex;gap:5px">
+                <div style="width:7px;height:7px;border-radius:50%;background:var(--text-muted)"></div>
+                <div style="width:7px;height:7px;border-radius:50%;background:var(--text-muted)"></div>
+                <div style="width:7px;height:7px;border-radius:50%;background:var(--text-muted)"></div>
+              </div>
+            </div>
+            <div class="occasion-tabs">
+              <div class="occ-tab active" onclick="setOcc(this)"><i class="fas fa-sun" style="font-size:.65rem"></i> Casual</div>
+              <div class="occ-tab" onclick="setOcc(this)">Office</div>
+              <div class="occ-tab" onclick="setOcc(this)">Party</div>
+              <div class="occ-tab" onclick="setOcc(this)">Wedding</div>
+              <div class="occ-tab" onclick="setOcc(this)">All <i class="fas fa-chevron-right" style="font-size:.6rem"></i></div>
+            </div>
+            <div class="outfit-cards-row">
+              <div class="outfit-card-sm">
+                <div class="outfit-img-wrap"><img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=900&q=80" alt="Tops"/></div>
+                <div class="outfit-card-sm-label"><span class="outfit-card-sm-name">👔 Tops</span><div class="outfit-card-sm-arrow"><i class="fas fa-chevron-right"></i></div></div>
+              </div>
+              <div class="outfit-card-sm">
+                <div class="outfit-img-wrap"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=900&q=80" alt="Office"/></div>
+                <div class="outfit-card-sm-label"><span class="outfit-card-sm-name">🏢 Office</span><div class="outfit-card-sm-arrow"><i class="fas fa-chevron-right"></i></div></div>
+              </div>
+              <div class="outfit-card-sm">
+                <div class="outfit-img-wrap"><img src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=80" alt="Party"/></div>
+                <div class="outfit-card-sm-label"><span class="outfit-card-sm-name">💃 Party</span><div class="outfit-card-sm-arrow"><i class="fas fa-chevron-right"></i></div></div>
+              </div>
+              <div class="outfit-card-sm">
+                <div class="outfit-img-wrap"><img src="https://images.unsplash.com/photo-1496747611176-843222e1e57c?w=900&q=80" alt="Wedding"/></div>
+                <div class="outfit-card-sm-label"><span class="outfit-card-sm-name">💍 Wedding</span><div class="outfit-card-sm-arrow"><i class="fas fa-chevron-right"></i></div></div>
+              </div>
+            </div>
+            <div style="text-align:center">
+              <button class="gen-more-btn" onclick="switchInner('outfits',null)">Generate More <i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+
+          <!-- Col 3: Wardrobe Insights -->
+          <div class="dash-col3">
+            <div class="insights-card">
+              <div class="insights-title">Wardrobe Insights</div>
+              <div class="donut-wrap">
+                <svg viewBox="0 0 120 120">
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="var(--border)" stroke-width="16"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#e0305e" stroke-width="16" stroke-dasharray="75 226" stroke-dashoffset="0"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#e8a04a" stroke-width="16" stroke-dasharray="55 226" stroke-dashoffset="-75"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#5080e8" stroke-width="16" stroke-dasharray="45 226" stroke-dashoffset="-130"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#6fba8a" stroke-width="16" stroke-dasharray="51 226" stroke-dashoffset="-175"/>
+                </svg>
+                <div class="donut-center"><div class="donut-center-pct">47</div><div class="donut-center-lbl">Total Items</div></div>
+              </div>
+              <div class="donut-legend">
+                <div class="dl-item"><div class="dl-dot" style="background:#e0305e"></div><span>Casual</span><span class="dl-pct">30%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#e8a04a"></div><span>Formal</span><span class="dl-pct">25%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#5080e8"></div><span>Party</span><span class="dl-pct">20%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#6fba8a"></div><span>Wedding</span><span class="dl-pct">25%</span></div>
+              </div>
+              <button class="view-analytics-btn" onclick="switchInner('analytics',null)">View Analytics <i class="fas fa-chevron-right"></i></button>
+            </div>
+          </div>
+
+          <!-- Row 3: Wardrobe summary + Most worn -->
+          <div class="dash-row3">
+            <div class="row3-wardrobe">
+              <div class="row3-wb-title">Your Wardrobe</div>
+              <div class="row3-wb-items">
+                <div class="row3-wb-item"><div class="row3-wb-icon">👔</div> Tops <span class="row3-wb-count">12</span></div>
+                <div class="row3-wb-item"><div class="row3-wb-icon">👖</div> Bottoms <span class="row3-wb-count">8</span></div>
+                <div class="row3-wb-item"><div class="row3-wb-icon">👟</div> Shoes <span class="row3-wb-count">5</span></div>
+                <div class="row3-wb-item"><div class="row3-wb-icon">👗</div> <span style="color:var(--text-muted)">…</span></div>
+              </div>
+            </div>
+            <div class="most-worn-card">
+              <div class="most-worn-img"><img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=900&q=80" alt="Most worn"/></div>
+              <div class="most-worn-info">
+                <div class="most-worn-label">Most Worn Item</div>
+                <div class="most-worn-name">Beige Sweater</div>
+                <div class="most-worn-count">8 times this month</div>
+              </div>
+            </div>
+          </div>
+
+        </div><!-- /dash-grid -->
+      </div>
+
+      <!-- ══════════════════════════════════════
+           WARDROBE INNER
+      ══════════════════════════════════════ -->
+      <div class="inner" id="inner-wardrobe">
+        <div class="page-header">
+          <div class="page-header-left">
+            <h2 style="font-family:var(--font-display);font-size:1.35rem;font-weight:600;margin-bottom:3px">My Wardrobe</h2>
+            <p class="text-muted text-sm">47 items across 5 categories</p>
+          </div>
+          <button class="btn-primary btn-sm" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Item</button>
+        </div>
+        <div class="toolbar">
+          <div class="tool-search"><i class="fas fa-search" style="color:var(--text-muted);font-size:.8rem"></i><input type="text" placeholder="Search your wardrobe…"/></div>
+          <div class="filter-chips">
+            <div class="f-chip active" onclick="setFilter(this)">All</div>
+            <div class="f-chip" onclick="setFilter(this)">Tops</div>
+            <div class="f-chip" onclick="setFilter(this)">Bottoms</div>
+            <div class="f-chip" onclick="setFilter(this)">Dresses</div>
+            <div class="f-chip" onclick="setFilter(this)">Shoes</div>
+            <div class="f-chip" onclick="setFilter(this)">Accessories</div>
+          </div>
+        </div>
+        <div class="clothes-grid">
+          <div class="upload-box" onclick="openAddModal()">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <span><strong>Add New Item</strong></span>
+            <span>Click to upload photo</span>
+          </div>
+          <div class="cloth-card">
+            <div class="cloth-img"><img src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=900&q=80" alt="top"/>
+              <div class="cloth-overlay"><div class="ov-btn"><i class="fas fa-pen"></i></div><div class="ov-btn" style="color:#e0305e"><i class="fas fa-trash"></i></div><div class="ov-btn"><i class="fas fa-heart"></i></div></div>
+            </div>
+            <div class="cloth-info"><div class="cloth-name">Floral Silk Blouse</div><div class="cloth-meta"><span class="cloth-brand">Zara · Tops</span><span class="cloth-tag">5×</span></div></div>
+          </div>
+          <div class="cloth-card">
+            <div class="cloth-img"><img src="https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=900&q=80" alt="shoes"/>
+              <div class="cloth-overlay"><div class="ov-btn"><i class="fas fa-pen"></i></div><div class="ov-btn" style="color:#e0305e"><i class="fas fa-trash"></i></div><div class="ov-btn"><i class="fas fa-heart"></i></div></div>
+            </div>
+            <div class="cloth-info"><div class="cloth-name">White Sneakers</div><div class="cloth-meta"><span class="cloth-brand">Nike · Shoes</span><span class="cloth-tag" style="background:#fff0e0;color:#a05000">12×</span></div></div>
+          </div>
+          <div class="cloth-card">
+            <div class="cloth-img"><img src="https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=900&q=80" alt="dress"/>
+              <div class="cloth-overlay"><div class="ov-btn"><i class="fas fa-pen"></i></div><div class="ov-btn" style="color:#e0305e"><i class="fas fa-trash"></i></div><div class="ov-btn"><i class="fas fa-heart"></i></div></div>
+            </div>
+            <div class="cloth-info"><div class="cloth-name">Midi Wrap Dress</div><div class="cloth-meta"><span class="cloth-brand">H&M · Dresses</span><span class="cloth-tag" style="background:#e8f5ee;color:#1e7a42">New</span></div></div>
+          </div>
+          <div class="cloth-card">
+            <div class="cloth-img"><img src="https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=900&q=80" alt="jeans"/>
+              <div class="cloth-overlay"><div class="ov-btn"><i class="fas fa-pen"></i></div><div class="ov-btn" style="color:#e0305e"><i class="fas fa-trash"></i></div><div class="ov-btn"><i class="fas fa-heart"></i></div></div>
+            </div>
+            <div class="cloth-info"><div class="cloth-name">High-Waist Jeans</div><div class="cloth-meta"><span class="cloth-brand">Levi's · Bottoms</span><span class="cloth-tag" style="background:#fff0e0;color:#a05000">8×</span></div></div>
+          </div>
+          <div class="cloth-card">
+            <div class="cloth-img"><img src="https://images.unsplash.com/photo-1621184455862-c163dfb30e0f?w=900&q=80" alt="bag"/>
+              <div class="cloth-overlay"><div class="ov-btn"><i class="fas fa-pen"></i></div><div class="ov-btn" style="color:#e0305e"><i class="fas fa-trash"></i></div><div class="ov-btn"><i class="fas fa-heart"></i></div></div>
+            </div>
+            <div class="cloth-info"><div class="cloth-name">Leather Crossbody</div><div class="cloth-meta"><span class="cloth-brand">Coach · Bags</span><span class="cloth-tag" style="background:var(--pink-100);color:var(--pink-600)">Fav ♥</span></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           OUTFITS INNER
+      ══════════════════════════════════════ -->
+      <div class="inner" id="inner-outfits">
+        <div class="page-header">
+          <div class="page-header-left"><h2 style="font-family:var(--font-display);font-size:1.35rem;font-weight:600;margin-bottom:3px">Outfit Recommendations</h2><p class="text-muted text-sm">AI-curated looks for today's weather and your style</p></div>
+        </div>
+        <div class="occasion-tabs" style="margin-bottom:18px">
+          <div class="occ-tab active" onclick="setOcc(this)"><i class="fas fa-sun" style="font-size:.65rem"></i> All Styles</div>
+          <div class="occ-tab" onclick="setOcc(this)"><i class="fas fa-snowflake" style="font-size:.65rem"></i> Winter</div>
+          <div class="occ-tab" onclick="setOcc(this)"><i class="fas fa-umbrella-beach" style="font-size:.65rem"></i> Summer</div>
+          <div class="occ-tab" onclick="setOcc(this)"><i class="fas fa-ring" style="font-size:.65rem"></i> Wedding</div>
+          <div class="occ-tab" onclick="setOcc(this)"><i class="fas fa-champagne-glasses" style="font-size:.65rem"></i> Party Wear</div>
+        </div>
+        <div class="outfit-grid">
+          <div class="outfit-card-lg">
+            <div class="outfit-card-img"><img src="https://images.unsplash.com/photo-1611042553365-9b101441c135?w=900&q=80" alt="outfit"/><div class="outfit-fav active" onclick="toggleFav(this)"><i class="fas fa-heart"></i></div></div>
+            <div class="outfit-card-body"><div class="outfit-card-name">Summer Breezy Casual</div><div class="outfit-card-meta">⛅ 23°C · Casual · Today</div><div class="outfit-pieces"><span class="piece-tag">Floral Blouse</span><span class="piece-tag">White Jeans</span><span class="piece-tag">Sandals</span></div><div class="flex items-center justify-between"><div class="match-badge"><i class="fas fa-check-circle" style="font-size:.65rem"></i> 98% Match</div><button class="btn-primary" style="padding:7px 14px;font-size:.76rem">Wear Today</button></div></div>
+          </div>
+          <div class="outfit-card-lg">
+            <div class="outfit-card-img"><img src="https://images.unsplash.com/photo-1617127365659-c47fa864d8bc?w=900&q=80" alt="outfit"/><div class="outfit-fav" onclick="toggleFav(this)"><i class="far fa-heart"></i></div></div>
+            <div class="outfit-card-body"><div class="outfit-card-name">Power Office Look</div><div class="outfit-card-meta">🏢 Work Meeting · Formal</div><div class="outfit-pieces"><span class="piece-tag">Blazer</span><span class="piece-tag">Trousers</span><span class="piece-tag">Heels</span></div><div class="flex items-center justify-between"><div class="match-badge"><i class="fas fa-check-circle" style="font-size:.65rem"></i> 94% Match</div><button class="btn-primary" style="padding:7px 14px;font-size:.76rem">Wear Today</button></div></div>
+          </div>
+          <div class="outfit-card-lg">
+            <div class="outfit-card-img"><img src="https://images.unsplash.com/photo-1603217192634-61068e4d4bf9?w=900&q=80" alt="outfit"/><div class="outfit-fav" onclick="toggleFav(this)"><i class="far fa-heart"></i></div></div>
+            <div class="outfit-card-body"><div class="outfit-card-name">Evening Elegance</div><div class="outfit-card-meta">💃 Dinner · Night Out</div><div class="outfit-pieces"><span class="piece-tag">Midi Dress</span><span class="piece-tag">Heels</span><span class="piece-tag">Clutch</span></div><div class="flex items-center justify-between"><div class="match-badge"><i class="fas fa-check-circle" style="font-size:.65rem"></i> 91% Match</div><button class="btn-primary" style="padding:7px 14px;font-size:.76rem">Wear Today</button></div></div>
+          </div>
+        </div>
+        <div class="acc-section-title">Matching Accessories</div>
+        <div class="acc-grid">
+          <div class="acc-card"><span class="acc-emoji">👜</span><div class="acc-name">Leather Crossbody</div><div class="acc-match">97% compatible</div></div>
+          <div class="acc-card"><span class="acc-emoji">💍</span><div class="acc-name">Gold Ring Set</div><div class="acc-match">94% compatible</div></div>
+          <div class="acc-card"><span class="acc-emoji">🕶️</span><div class="acc-name">Cat-eye Sunglasses</div><div class="acc-match">92% compatible</div></div>
+          <div class="acc-card"><span class="acc-emoji">🧣</span><div class="acc-name">Silk Scarf</div><div class="acc-match">88% compatible</div></div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           ANALYTICS INNER
+      ══════════════════════════════════════ -->
+      <div class="inner" id="inner-analytics">
+        <div class="page-header"><div class="page-header-left"><h2 style="font-family:var(--font-display);font-size:1.35rem;font-weight:600;margin-bottom:3px">Wardrobe Analytics</h2><p class="text-muted text-sm">Insights to help you dress smarter</p></div></div>
+        <div class="analytics-kpi">
+          <div class="a-kpi-card"><div class="a-kpi-icon"><i class="fas fa-tshirt"></i></div><div class="a-kpi-val">47</div><div class="a-kpi-label">Total Items</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> +3 this week</div></div>
+          <div class="a-kpi-card"><div class="a-kpi-icon"><i class="fas fa-recycle"></i></div><div class="a-kpi-val">76%</div><div class="a-kpi-label">Utilisation Rate</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> +4% MoM</div></div>
+          <div class="a-kpi-card"><div class="a-kpi-icon"><i class="fas fa-star"></i></div><div class="a-kpi-val">4.6</div><div class="a-kpi-label">Avg Outfit Rating</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> +0.2</div></div>
+          <div class="a-kpi-card"><div class="a-kpi-icon"><i class="fas fa-leaf"></i></div><div class="a-kpi-val">£240</div><div class="a-kpi-label">Saved This Month</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> Less impulse buys</div></div>
+        </div>
+        <div class="analytics-charts">
+          <div class="chart-card">
+            <h4>Monthly Outfit Activity <span class="cloth-tag">May 2025</span></h4>
+            <div class="bar-chart-wrap" id="bar-chart"></div>
+          </div>
+          <div class="chart-card">
+            <h4>Category Breakdown</h4>
+            <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+              <div style="position:relative;width:120px;height:120px">
+                <svg viewBox="0 0 120 120" style="width:100%;height:100%;transform:rotate(-90deg)">
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="var(--border)" stroke-width="16"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#e0305e" stroke-width="16" stroke-dasharray="75 226" stroke-dashoffset="0"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#e8a04a" stroke-width="16" stroke-dasharray="55 226" stroke-dashoffset="-75"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#5080e8" stroke-width="16" stroke-dasharray="45 226" stroke-dashoffset="-130"/>
+                  <circle cx="60" cy="60" r="48" fill="none" stroke="#6fba8a" stroke-width="16" stroke-dasharray="51 226" stroke-dashoffset="-175"/>
+                </svg>
+                <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-family:var(--font-display);font-size:1.2rem;font-weight:600">47</div><div style="font-size:.65rem;color:var(--text-muted)">items</div></div>
+              </div>
+              <div class="donut-legend" style="width:100%">
+                <div class="dl-item"><div class="dl-dot" style="background:#e0305e"></div><span>Tops & Blouses</span><span class="dl-pct">34%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#e8a04a"></div><span>Bottoms</span><span class="dl-pct">23%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#5080e8"></div><span>Shoes</span><span class="dl-pct">19%</span></div>
+                <div class="dl-item"><div class="dl-dot" style="background:#6fba8a"></div><span>Accessories</span><span class="dl-pct">24%</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="analytics-bottom">
+          <div class="chart-card"><h4>🔥 Most Used Items</h4>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px;border-radius:var(--r-md);background:var(--sand)"><div style="width:44px;height:44px;border-radius:var(--r-sm);overflow:hidden;flex-shrink:0;background:var(--pink-50)"><img src="https://images.unsplash.com/photo-1623609163859-ca93c959b98a?w=900&q=80" alt=""/></div><div style="flex:1"><div style="font-size:.82rem;font-weight:600">White Sneakers</div><div style="font-size:.72rem;color:var(--text-muted)">Worn 12 times</div></div><span class="cloth-tag" style="background:#fff0e0;color:#a05000">12×</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px;border-radius:var(--r-md);background:var(--sand)"><div style="width:44px;height:44px;border-radius:var(--r-sm);overflow:hidden;flex-shrink:0;background:var(--pink-50);display:flex;align-items:center;justify-content:center;font-size:1.4rem">👜</div><div style="flex:1"><div style="font-size:.82rem;font-weight:600">Leather Crossbody</div><div style="font-size:.72rem;color:var(--text-muted)">Worn 9 times</div></div><span class="cloth-tag">9×</span></div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px;border-radius:var(--r-md);background:var(--sand)"><div style="width:44px;height:44px;border-radius:var(--r-sm);overflow:hidden;flex-shrink:0;background:var(--pink-50)"><img src="https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=900&q=80" alt=""/></div><div style="flex:1"><div style="font-size:.82rem;font-weight:600">High-Waist Jeans</div><div style="font-size:.72rem;color:var(--text-muted)">Worn 8 times</div></div><span class="cloth-tag" style="background:#e8f0ff;color:#2040a0">8×</span></div>
+            </div>
+          </div>
+          <div class="chart-card"><h4>📅 Outfit History</h4>
+            <div class="timeline-list">
+              <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot"></div><div class="tl-line"></div></div><div><div class="tl-title">Summer Breeze Outfit</div><div class="tl-meta">Today — Brunch · ⭐⭐⭐⭐⭐</div></div></div>
+              <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot"></div><div class="tl-line"></div></div><div><div class="tl-title">Power Office Look</div><div class="tl-meta">Yesterday — Work · ⭐⭐⭐⭐</div></div></div>
+              <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot"></div><div class="tl-line"></div></div><div><div class="tl-title">Evening Elegance</div><div class="tl-meta">2 days ago — Dinner · ⭐⭐⭐⭐⭐</div></div></div>
+              <div class="tl-item"><div class="tl-dot-wrap"><div class="tl-dot"></div></div><div><div class="tl-title">Weekend Brunch</div><div class="tl-meta">3 days ago — Casual · ⭐⭐⭐⭐</div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           ADMIN INNER
+      ══════════════════════════════════════ -->
+      <div class="inner" id="inner-admin">
+        <div class="page-header"><div class="page-header-left"><h2 style="font-family:var(--font-display);font-size:1.35rem;font-weight:600;margin-bottom:3px">Admin Panel</h2><p class="text-muted text-sm">Platform management and oversight</p></div></div>
+        <div class="admin-kpi">
+          <div class="a-kpi-card"><div class="a-kpi-icon"><i class="fas fa-users"></i></div><div class="a-kpi-val">24,831</div><div class="a-kpi-label">Total Users</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> +284 this week</div></div>
+          <div class="a-kpi-card"><div class="a-kpi-icon" style="background:#e8f5ee;color:#1e7a42"><i class="fas fa-magic"></i></div><div class="a-kpi-val">2.4M</div><div class="a-kpi-label">Outfits Generated</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> +12.4% MoM</div></div>
+          <div class="a-kpi-card"><div class="a-kpi-icon" style="background:#fff0e0;color:#a05000"><i class="fas fa-flag"></i></div><div class="a-kpi-val">18</div><div class="a-kpi-label">Reports Pending</div><div class="a-kpi-change ch-dn"><i class="fas fa-arrow-up"></i> +3 today</div></div>
+          <div class="a-kpi-card"><div class="a-kpi-icon" style="background:#e8f0ff;color:#2040a0"><i class="fas fa-pound-sign"></i></div><div class="a-kpi-val">£48.2K</div><div class="a-kpi-label">Monthly Revenue</div><div class="a-kpi-change ch-up"><i class="fas fa-arrow-up"></i> +8.7% MoM</div></div>
+        </div>
+        <div class="admin-grid2">
+          <div class="chart-card"><h4>User Management <button class="btn-primary" style="padding:6px 14px;font-size:.74rem"><i class="fas fa-plus"></i> Add</button></h4>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>User</th><th>Plan</th><th>Joined</th><th>Status</th><th>Actions</th></tr></thead>
+                <tbody>
+                  <tr><td><div class="t-user"><div class="t-av">SA</div><div><span class="t-name">Sara Ahmed</span><span class="t-email">sara@example.com</span></div></div></td><td><span class="cloth-tag">Premium</span></td><td class="text-xs text-muted">Jan 2025</td><td><span class="status-badge s-active">Active</span></td><td><div class="flex gap-2"><button class="tb-btn" style="width:27px;height:27px;font-size:.7rem"><i class="fas fa-pen"></i></button><button class="tb-btn" style="width:27px;height:27px;font-size:.7rem;color:var(--pink-500)"><i class="fas fa-ban"></i></button></div></td></tr>
+                  <tr><td><div class="t-user"><div class="t-av" style="background:linear-gradient(135deg,#a0c0ff,#4060e0)">LM</div><div><span class="t-name">Layla Mason</span><span class="t-email">layla@example.com</span></div></div></td><td><span class="status-badge s-inactive">Free</span></td><td class="text-xs text-muted">Feb 2025</td><td><span class="status-badge s-active">Active</span></td><td><div class="flex gap-2"><button class="tb-btn" style="width:27px;height:27px;font-size:.7rem"><i class="fas fa-pen"></i></button><button class="tb-btn" style="width:27px;height:27px;font-size:.7rem;color:var(--pink-500)"><i class="fas fa-ban"></i></button></div></td></tr>
+                  <tr><td><div class="t-user"><div class="t-av" style="background:linear-gradient(135deg,#a0e0b0,#20a050)">MK</div><div><span class="t-name">Maya Kim</span><span class="t-email">maya@example.com</span></div></div></td><td><span class="cloth-tag">Premium</span></td><td class="text-xs text-muted">Mar 2025</td><td><span class="status-badge s-suspended">Suspended</span></td><td><div class="flex gap-2"><button class="tb-btn" style="width:27px;height:27px;font-size:.7rem"><i class="fas fa-pen"></i></button><button class="tb-btn" style="width:27px;height:27px;font-size:.7rem;color:var(--pink-500)"><i class="fas fa-trash"></i></button></div></td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div class="chart-card"><h4>System Activity Log</h4>
+            <div class="act-log">
+              <div class="act-item"><div class="act-ico ai-blue"><i class="fas fa-user-plus"></i></div><div><div class="act-title">New user registered</div><div class="act-time">5 min ago</div></div></div>
+              <div class="act-item"><div class="act-ico ai-pink"><i class="fas fa-magic"></i></div><div><div class="act-title">4,280 outfits generated today</div><div class="act-time">1 hr ago</div></div></div>
+              <div class="act-item"><div class="act-ico ai-amber"><i class="fas fa-flag"></i></div><div><div class="act-title">3 new content flags</div><div class="act-time">2 hrs ago</div></div></div>
+              <div class="act-item"><div class="act-ico ai-green"><i class="fas fa-server"></i></div><div><div class="act-title">System health check passed</div><div class="act-time">3 hrs ago</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card" style="margin-bottom:0"><h4>Content Moderation Queue <span class="cloth-tag" style="background:#fff0e0;color:#a05000">3 Pending</span></h4>
+          <div class="mod-grid">
+            <div class="mod-card"><div class="mod-card-header"><div class="mod-card-title">Reported Outfit #142</div><span class="status-badge s-suspended">Flagged</span></div><div class="mod-desc">User reported inappropriate imagery in shared outfit post.</div><div class="mod-actions"><button class="mod-approve">Approve</button><button class="mod-reject">Remove</button></div></div>
+            <div class="mod-card"><div class="mod-card-header"><div class="mod-card-title">Spam Account #83</div><span class="status-badge s-suspended">Review</span></div><div class="mod-desc">Multiple reports of spam activity and fake wardrobe items.</div><div class="mod-actions"><button class="mod-approve">Whitelist</button><button class="mod-reject">Suspend</button></div></div>
+            <div class="mod-card"><div class="mod-card-header"><div class="mod-card-title">Bulk Upload #291</div><span class="status-badge s-inactive">Pending</span></div><div class="mod-desc">Large batch upload requires manual verification of item tags.</div><div class="mod-actions"><button class="mod-approve">Verify</button><button class="mod-reject">Reject</button></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════════════════════════════
+           NOTIFICATIONS INNER
+      ══════════════════════════════════════ -->
+      <div class="inner" id="inner-notifications">
+        <div class="page-header"><div class="page-header-left"><h2 style="font-family:var(--font-display);font-size:1.35rem;font-weight:600;margin-bottom:3px">Notifications & Feedback</h2><p class="text-muted text-sm">Stay on top of your style game</p></div></div>
+        <div class="notif-layout">
+          <div>
+            <div class="card-title" style="font-family:var(--font-display);margin-bottom:12px">Notifications</div>
+            <div class="notif-list">
+              <div class="notif-item unread"><div class="notif-ico ni-pink"><i class="fas fa-magic"></i></div><div class="notif-content"><div class="notif-title">New outfit suggestion ready!</div><div class="notif-desc">3 new looks based on tomorrow's forecast (sunny, 24°C).</div><div class="notif-time"><i class="far fa-clock"></i> 5 minutes ago</div></div></div>
+              <div class="notif-item unread"><div class="notif-ico ni-amber"><i class="fas fa-cloud-rain"></i></div><div class="notif-content"><div class="notif-title">Weather Alert: Rain on Wednesday</div><div class="notif-desc">Consider waterproof-friendly outfit options for Wednesday.</div><div class="notif-time"><i class="far fa-clock"></i> 1 hour ago</div></div></div>
+              <div class="notif-item"><div class="notif-ico ni-pink"><i class="fas fa-bell"></i></div><div class="notif-content"><div class="notif-title">Daily Style Reminder</div><div class="notif-desc">Don't forget to log today's outfit! Your analytics will thank you.</div><div class="notif-time"><i class="far fa-clock"></i> This morning</div></div></div>
+              <div class="notif-item"><div class="notif-ico ni-blue"><i class="fas fa-tshirt"></i></div><div class="notif-content"><div class="notif-title">11 unworn items in your wardrobe</div><div class="notif-desc">Haven't worn 11 items in 30+ days. Want some fresh styling ideas?</div><div class="notif-time"><i class="far fa-clock"></i> Yesterday</div></div></div>
+            </div>
+            <div class="card-title" style="font-family:var(--font-display);margin:18px 0 12px">Weather & Style Alerts</div>
+            <div class="alert-item alert-weather"><div class="alert-emoji">🌧️</div><div class="alert-content"><div class="alert-t">Rain expected Wednesday</div><div class="alert-d">Pack your waterproof jacket and closed-toe shoes.</div></div><button class="btn-outline" style="padding:6px 14px;font-size:.76rem;flex-shrink:0">Plan</button></div>
+            <div class="alert-item alert-outfit"><div class="alert-emoji">🌸</div><div class="alert-content"><div class="alert-t">Spring Wardrobe Reminder</div><div class="alert-d">Time to rotate winter items and bring out spring pieces.</div></div><button class="btn-outline" style="padding:6px 14px;font-size:.76rem;flex-shrink:0">View</button></div>
+          </div>
+          <div>
+            <div class="rating-card">
+              <div class="rating-img"><img src="https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=900&q=80" alt="outfit"/></div>
+              <div class="rating-name">Rate Today's Outfit</div>
+              <div class="rating-prompt">How did this look make you feel?</div>
+              <div class="stars" id="stars">
+                <span class="star-btn" onclick="rateStar(1)">★</span>
+                <span class="star-btn" onclick="rateStar(2)">★</span>
+                <span class="star-btn" onclick="rateStar(3)">★</span>
+                <span class="star-btn" onclick="rateStar(4)">★</span>
+                <span class="star-btn on" onclick="rateStar(5)">★</span>
+              </div>
+              <textarea class="rate-ta" rows="3" placeholder="Tell us more… (optional)"></textarea>
+              <button class="btn-primary w-full" style="justify-content:center"><i class="fas fa-paper-plane"></i> Submit Rating</button>
+            </div>
+            <div class="chart-card" style="text-align:center;padding:22px">
+              <div style="font-size:1.8rem;margin-bottom:10px">💌</div>
+              <div style="font-family:var(--font-display);font-size:.95rem;font-weight:600;margin-bottom:6px">Send Us Feedback</div>
+              <p class="text-sm text-muted" style="margin-bottom:14px">Help us make Outfit Styling System even better.</p>
+              <button class="btn-primary" style="justify-content:center" onclick="openFeedbackModal()"><i class="fas fa-comment-alt"></i> Send Feedback</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /app-content -->
+  </div><!-- /app-main -->
+</div><!-- /app-shell -->
+
+<!-- ═══ MODALS ═══ -->
+<!-- Feedback Modal -->
+<div class="modal-bg" id="feedback-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Send Feedback</div>
+      <div class="modal-close" onclick="closeFeedbackModal()"><i class="fas fa-times"></i></div>
+    </div>
+    <div class="form-group">
+      <label class="form-lbl">Feedback Type</label>
+      <select class="form-select"><option>Bug Report</option><option>Feature Request</option><option>General Feedback</option><option>Outfit Suggestion</option></select>
+    </div>
+    <div class="form-group">
+      <label class="form-lbl">Subject</label>
+      <input type="text" class="form-inp" placeholder="Brief description…" style="margin-bottom:0"/>
+    </div>
+    <div class="form-group" style="margin-top:12px">
+      <label class="form-lbl">Message</label>
+      <textarea class="rate-ta" rows="4" placeholder="Tell us more…" style="margin-bottom:0"></textarea>
+    </div>
+    <div class="flex gap-3 justify-between" style="margin-top:16px">
+      <button class="btn-outline" onclick="closeFeedbackModal()">Cancel</button>
+      <button class="btn-primary" onclick="closeFeedbackModal()"><i class="fas fa-paper-plane"></i> Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Item Modal -->
+<div class="modal-bg" id="add-modal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Add Clothing Item</div>
+      <div class="modal-close" onclick="closeAddModal()"><i class="fas fa-times"></i></div>
+    </div>
+    <div class="upload-box" style="height:120px;margin-bottom:16px">
+      <i class="fas fa-camera" style="font-size:1.5rem"></i>
+      <span>Upload photo or drag & drop</span>
+    </div>
+    <div class="col2">
+      <div><label class="form-lbl">Item Name</label><input type="text" class="form-inp" placeholder="e.g. Floral Blouse"/></div>
+      <div><label class="form-lbl">Brand</label><input type="text" class="form-inp" placeholder="e.g. Zara Zarar"/></div>
+    </div>
+    <div class="col2">
+      <div><label class="form-lbl">Category</label><select class="form-select" style="margin-bottom:0"><option>Tops</option><option>Bottoms</option><option>Dresses</option><option>Shoes</option><option>Accessories</option></select></div>
+      <div><label class="form-lbl">Colour</label><input type="text" class="form-inp" placeholder="e.g. Pink Floral"/></div>
+    </div>
+    <div class="flex gap-3 justify-between" style="margin-top:16px">
+      <button class="btn-outline" onclick="closeAddModal()">Cancel</button>
+      <button class="btn-primary" onclick="closeAddModal()"><i class="fas fa-plus"></i> Add Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- FAB -->
+<button class="fab" id="fab" onclick="openFeedbackModal()"><i class="fas fa-comment-alt"></i></button>
+
+<!-- ═══════════════════════════════════════════════════════════
+     JAVASCRIPT
+═══════════════════════════════════════════════════════════ -->
+<script>
+/* ─── LOADER ─── */
+window.addEventListener('load',()=>{
+  setTimeout(()=>document.getElementById('loader').classList.add('gone'),1900);
+});
+
+/* ─── THEME ─── */
+function toggleTheme(){
+  const h=document.documentElement;
+  const dark=h.dataset.theme==='dark';
+  h.dataset.theme=dark?'light':'dark';
+  document.querySelectorAll('#theme-ico,#theme-ico-app').forEach(i=>{
+    i.className=dark?'fas fa-moon':'fas fa-sun';
+  });
+}
+
+/* ─── PAGE NAVIGATION ─── */
+const pages={landing:'pg-landing',auth:'pg-auth'};
+function showPage(name){
+  document.querySelectorAll('.page,.app-page').forEach(p=>p.classList.remove('active'));
+  const id=pages[name];
+  if(id){document.getElementById(id).classList.add('active');}
+  document.getElementById('fab').classList.remove('show');
+  document.getElementById('mob-sb-btn').style.display='none';
+  syncNavLinks(name);
+  closeMobNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+  closeNotif();
+}
+
+function showApp(panel){
+  document.querySelectorAll('.page,.app-page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('app-shell').classList.add('active');
+  document.getElementById('fab').classList.add('show');
+  switchInner(panel,null);
+  syncNavLinks('app');
+  closeMobNav();
+  window.scrollTo({top:0,behavior:'smooth'});
+  closeNotif();
+  handleResize();
+}
+
+function syncNavLinks(key){
+  document.querySelectorAll('.gnav-link').forEach(l=>l.classList.remove('active'));
+  const map={landing:0,auth:1};
+  if(map[key]!==undefined) document.querySelectorAll('.gnav-link')[map[key]].classList.add('active');
+}
+
+/* ─── INNER PANELS ─── */
+const titles={dashboard:'Dashboard',wardrobe:'My Wardrobe',outfits:'Outfit Ideas',analytics:'Analytics',admin:'Admin Panel',notifications:'Notifications'};
+function switchInner(name,navEl){
+  document.querySelectorAll('.inner').forEach(i=>i.classList.remove('active'));
+  const el=document.getElementById('inner-'+name);
+  if(el) el.classList.add('active');
+  const t=document.getElementById('inner-title');
+  if(t&&titles[name]) t.textContent=titles[name];
+  if(navEl){
+    document.querySelectorAll('.sb-item').forEach(i=>i.classList.remove('active'));
+    navEl.classList.add('active');
+  }
+  closeMobSidebar();
+}
+
+/* ─── SIDEBAR ─── */
+function toggleSidebar(){
+  document.getElementById('app-sidebar').classList.toggle('slim');
+}
+function toggleMobSidebar(){
+  document.getElementById('app-sidebar').classList.toggle('mobile-open');
+  document.getElementById('sb-overlay').classList.toggle('show');
+}
+function closeMobSidebar(){
+  document.getElementById('app-sidebar').classList.remove('mobile-open');
+  document.getElementById('sb-overlay').classList.remove('show');
+}
+
+/* ─── MOBILE NAV ─── */
+function toggleMobNav(){document.getElementById('mob-nav').classList.toggle('open')}
+function closeMobNav(){document.getElementById('mob-nav').classList.remove('open')}
+
+/* ─── RESPONSIVE ─── */
+function handleResize(){
+  const btn=document.getElementById('mob-sb-btn');
+  const appActive=document.getElementById('app-shell').classList.contains('active');
+  btn.style.display=(appActive&&window.innerWidth<=768)?'flex':'none';
+}
+window.addEventListener('resize',handleResize);
+
+/* ─── AUTH TABS ─── */
+function switchAuth(tab){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.auth-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('panel-'+tab).classList.add('active');
+}
+
+/* ─── PASSWORD TOGGLE ─── */
+function togglePw(id,icon){
+  const inp=document.getElementById(id);
+  if(inp.type==='password'){inp.type='text';icon.className='fas fa-eye-slash pw-eye';}
+  else{inp.type='password';icon.className='fas fa-eye pw-eye';}
+}
+
+/* ─── NOTIFICATION DROPDOWN ─── */
+function toggleNotif(){document.getElementById('notif-drop').classList.toggle('open')}
+function closeNotif(){document.getElementById('notif-drop').classList.remove('open')}
+document.addEventListener('click',e=>{
+  if(!e.target.closest('[onclick="toggleNotif()"]')&&!e.target.closest('#notif-drop')) closeNotif();
+});
+
+/* ─── OCCASION / FILTER CHIPS ─── */
+function setOcc(el){
+  el.closest('.occasion-tabs').querySelectorAll('.occ-tab').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+function setFilter(el){
+  document.querySelectorAll('.f-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+/* ─── FAVOURITE TOGGLE ─── */
+function toggleFav(el){
+  const on=el.classList.toggle('active');
+  el.innerHTML=on?'<i class="fas fa-heart"></i>':'<i class="far fa-heart"></i>';
+}
+
+/* ─── STAR RATING ─── */
+function rateStar(n){
+  document.querySelectorAll('#stars .star-btn').forEach((s,i)=>s.classList.toggle('on',i<n));
+}
+
+/* ─── MODALS ─── */
+function openFeedbackModal(){document.getElementById('feedback-modal').classList.add('open')}
+function closeFeedbackModal(){document.getElementById('feedback-modal').classList.remove('open')}
+function openAddModal(){document.getElementById('add-modal').classList.add('open')}
+function closeAddModal(){document.getElementById('add-modal').classList.remove('open')}
+['feedback-modal','add-modal'].forEach(id=>{
+  document.getElementById(id).addEventListener('click',function(e){
+    if(e.target===this) this.classList.remove('open');
+  });
+});
+
+/* ─── BAR CHART ─── */
+(function(){
+  const data=[{l:'Jan',h:42},{l:'Feb',h:58},{l:'Mar',h:52},{l:'Apr',h:74},{l:'May',h:90},{l:'Jun',h:65},{l:'Jul',h:82},{l:'Aug',h:70},{l:'Sep',h:58},{l:'Oct',h:85},{l:'Nov',h:72},{l:'Dec',h:48}];
+  const c=document.getElementById('bar-chart');
+  if(!c) return;
+  data.forEach(d=>{
+    const g=document.createElement('div');
+    g.className='bar-grp';
+    g.innerHTML=`<div class="bar" style="height:${d.h}%" title="${d.h} outfits"></div><span class="bar-lbl">${d.l}</span>`;
+    c.appendChild(g);
+  });
+})();
+
+/* ─── SCROLL REVEAL ─── */
+(function(){
+  const obs=new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        e.target.style.animation='fadeUp .5s ease both';
+        obs.unobserve(e.target);
+      }
+    });
+  },{threshold:.1});
+  document.querySelectorAll('.feat-card,.testi-card').forEach(el=>{
+    el.style.opacity='0';obs.observe(el);
+  });
+})();
+</script>
+</body>
+</html>
